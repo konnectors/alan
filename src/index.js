@@ -1,129 +1,66 @@
 const {
   BaseKonnector,
   requestFactory,
-  signin,
-  scrape,
-  saveBills,
-  log
+  log,
+  errors,
+  saveFiles
 } = require('cozy-konnector-libs')
+const jwt = require('jwt-decode')
 const request = requestFactory({
-  // the debug mode shows all the details about http request and responses. Very useful for
-  // debugging but very verbose. That is why it is commented out by default
-  debug: 'full',
-  // activates [cheerio](https://cheerio.js.org/) parsing on each page
-  cheerio: true,
-  // If cheerio is activated do not forget to deactivate json parsing (which is activated by
-  // default in cozy-konnector-libs
-  json: false,
-  // this allows request-promise to keep cookies between requests
+  // debug: true,
+  cheerio: false,
+  json: true,
   jar: true
 })
 
-const baseUrl = 'http://books.toscrape.com'
+const baseUrl = 'https://alan.eu'
+const apiUrl = 'https://api.alan.eu'
 
 module.exports = new BaseKonnector(start)
 
-// The start function is run by the BaseKonnector instance only when it got all the account
-// information (fields). When you run this connector yourself in "standalone" mode or "dev" mode,
-// the account information come from ./konnector-dev-config.json file
 async function start(fields) {
   log('info', 'Authenticating ...')
-  await authenticate(fields.login, fields.password)
+  const user = await authenticate(fields.login, fields.password)
   log('info', 'Successfully logged in')
-  // The BaseKonnector instance expects a Promise as return of the function
-  log('info', 'Fetching the list of documents')
-  const $ = await request(`${baseUrl}/index.html`)
-  // cheerio (https://cheerio.js.org/) uses the same api as jQuery (http://jquery.com/)
-  log('info', 'Parsing list of documents')
-  const documents = await parseDocuments($)
 
-  // here we use the saveBills function even if what we fetch are not bills, but this is the most
-  // common case in connectors
-  log('info', 'Saving data to Cozy')
-  await saveBills(documents, fields, {
-    // this is a bank identifier which will be used to link bills to bank operations. These
-    // identifiers should be at least a word found in the title of a bank operation related to this
-    // bill. It is not case sensitive.
-    identifiers: ['books']
-  })
-}
-
-// this shows authentication using the [signin function](https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#module_signin)
-// even if this in another domain here, but it works as an example
-function authenticate(username, password) {
-  return signin({
-    url: `http://quotes.toscrape.com/login`,
-    formSelector: 'form',
-    formData: { username, password },
-    // the validate function will check if the login request was a success. Every website has
-    // different ways respond: http status code, error message in html ($), http redirection
-    // (fullResponse.request.uri.href)...
-    validate: (statusCode, $, fullResponse) => {
-      log(
-        'debug',
-        fullResponse.request.uri.href,
-        'not used here but should be usefull for other connectors'
-      )
-      // The login in toscrape.com always works excepted when no password is set
-      if ($(`a[href='/logout']`).length === 1) {
-        return true
-      } else {
-        // cozy-konnector-libs has its own logging function which format these logs with colors in
-        // standalone and dev mode and as JSON in production mode
-        log('error', $('.error').text())
-        return false
-      }
-    }
-  })
-}
-
-// The goal of this function is to parse a html page wrapped by a cheerio instance
-// and return an array of js objects which will be saved to the cozy by saveBills (https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#savebills)
-function parseDocuments($) {
-  // you can find documentation about the scrape function here :
-  // https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#scrape
-  const docs = scrape(
-    $,
+  const data = await request(
+    `${apiUrl}/api/users/${
+      user.userId
+    }?expand=beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.settlements,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,invoices,insurance_profile,address,current_billing_iban,current_settlement_iban,current_exemption.company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_plan,company.current_contract.discounts,insurance_profile.current_policy.contract.current_plan,insurance_profile.current_policy.contract.contractee,legacy_health_contract,current_contract.madelin_attestations,current_contract.amendments,current_contract.current_plan,accountant,insurance_documents,insurance_documents.quotes,authorized_billing_ibans`,
     {
-      title: {
-        sel: 'h3 a',
-        attr: 'title'
-      },
-      amount: {
-        sel: '.price_color',
-        parse: normalizePrice
-      },
-      fileurl: {
-        sel: 'img',
-        attr: 'src',
-        parse: src => `${baseUrl}/${src}`
-      },
-      filename: {
-        sel: 'h3 a',
-        attr: 'title',
-        parse: title => `${title}.jpg`
+      auth: {
+        bearer: user.token
       }
-    },
-    'article'
-  )
-  return docs.map(doc => ({
-    ...doc,
-    // the saveBills function needs a date field
-    // even if it is a little artificial here (these are not real bills)
-    date: new Date(),
-    currency: '€',
-    vendor: 'template',
-    metadata: {
-      // it can be interesting that we add the date of import. This is not mandatory but may be
-      // useful for debugging or data migration
-      importDate: new Date(),
-      // document version, useful for migration after change of document structure
-      version: 1
     }
-  }))
+  )
+
+  const policyId = data.insurance_profile.current_policy.id
+  await saveFiles(
+    [
+      {
+        fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
+        filename: 'Carte_Mutuelle.pdf',
+        requestOptions: {
+          auth: {
+            bearer: user.token
+          }
+        }
+      }
+    ],
+    fields
+  )
 }
 
-// convert a price string to a float
-function normalizePrice(price) {
-  return parseFloat(price.replace('£', '').trim())
+async function authenticate(email, password) {
+  await request(`${baseUrl}/login`)
+  try {
+    const resp = await request.post(`${apiUrl}/auth/login`, {
+      body: { email, password, refresh_token_type: 'web' }
+    })
+    resp.userId = jwt(resp.token).id
+    return resp
+  } catch (err) {
+    log('error', err.message)
+    throw new Error(errors.LOGIN_FAILED)
+  }
 }

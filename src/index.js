@@ -79,21 +79,26 @@ async function start(fields) {
   })
 
   // add files
+  let currentMonthIsReplaced = false
   bills = bills.map(bill => {
-    if (!bill.isThirdPartyPayer) {
-      bill.fileurl = `https://api.alan.eu/api/users/view_settlements/${
-        user.userId
-      }?year=${moment(bill.date).format('YYYY')}&month=${moment(
-        bill.date
-      ).format('M')}`
-      bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
-      const currentMonth = moment().format('M')
-      bill.shouldReplaceFile = doc =>
-        moment(doc.date).format('M') === currentMonth
-      bill.requestOptions = {
-        auth: {
-          bearer: user.token
-        }
+    bill.fileurl = `https://api.alan.eu/api/users/view_settlements/${
+      user.userId
+    }?year=${moment(bill.date).format('YYYY')}&month=${moment(bill.date).format(
+      'M'
+    )}`
+    bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
+    const currentMonth = moment().format('M')
+    bill.shouldReplaceFile = doc => {
+      const isCurrentMonth = moment(doc.date).format('M') === currentMonth
+      // replace current month file only one time
+      if (isCurrentMonth && !currentMonthIsReplaced) {
+        currentMonthIsReplaced = true
+      }
+      return !currentMonthIsReplaced
+    }
+    bill.requestOptions = {
+      auth: {
+        bearer: user.token
       }
     }
     return bill

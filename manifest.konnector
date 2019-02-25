@@ -7,8 +7,10 @@
   "slug": "alan",
   "source": "git://github.com/konnectors/alan.git",
   "editor": "Cozy",
-  "vendor_link": "Link to the target website",
-  "categories": ["other"],
+  "vendor_link": "https://alan.eu/login",
+  "categories": [
+    "insurance"
+  ],
   "fields": {
     "login": {
       "type": "text"
@@ -85,6 +87,6 @@
       }
     }
   },
-  "banksTransactionRegExp": "\\bbooks\\b",
+  "banksTransactionRegExp": "\\balan\\b",
   "manifest_version": "2"
 }

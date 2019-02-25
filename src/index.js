@@ -109,6 +109,7 @@ async function start(fields) {
       {
         fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
         filename: 'Carte_Mutuelle.pdf',
+        shouldReplaceFile: () => true,
         requestOptions: {
           auth: {
             bearer: user.token

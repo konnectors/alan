@@ -1661,10 +1661,10 @@ cozy-client-js@0.9.0:
     pouchdb-adapter-cordova-sqlite "https://github.com/SnceGroup/pouchdb-adapter-cordova-sqlite.git#f3ee23009b70209c611435d57491aa77fb88802a"
     pouchdb-find "0.10.4"
 
-cozy-jobs-cli@1.7.12:
-  version "1.7.12"
-  resolved "https://registry.yarnpkg.com/cozy-jobs-cli/-/cozy-jobs-cli-1.7.12.tgz#8cb3ac4bb90ad5a1f583ff8910b7ef555beb677b"
-  integrity sha512-iFmjfqvn1yM/1a0FjUzUJ9S4hSHxVZY+8oxf/B2nc590SBJwiVL40yHAdHmkvQFSpbAi/GwmEuWlYW1cMU0aKg==
+cozy-jobs-cli@1.7.13:
+  version "1.7.13"
+  resolved "https://registry.yarnpkg.com/cozy-jobs-cli/-/cozy-jobs-cli-1.7.13.tgz#03cf2a51e26736e6de4769d6cdcf2c2257c2dc33"
+  integrity sha512-7HWA72XnfW8Oy95/mOKWHyaT3xKc6B5NtyVgwfqYmmUajeF3rwKhkbwLg8qp/7oYM8h4N2/c6ytzeMZWmlTXAA==
   dependencies:
     btoa "1.2.1"
     cheerio "1.0.0-rc.2"
@@ -1672,17 +1672,17 @@ cozy-jobs-cli@1.7.12:
     commander "2.19.0"
     core-js "2.6.5"
     cozy-client-js "0.9.0"
-    cozy-konnector-libs "^4.14.10"
+    cozy-konnector-libs "^4.14.11"
     cozy-logger "^1.3.1"
     opn "5.4.0"
     pretty "2.0.0"
     regenerator-runtime "0.13.1"
     replay "2.4.0"
 
-cozy-konnector-libs@4.14.10, cozy-konnector-libs@^4.14.10:
-  version "4.14.10"
-  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-4.14.10.tgz#14b25b494ac7b530b8f66fc6b6e97f30dcaa5c83"
-  integrity sha512-1VwypquJ21AMQMqoj5PtwFaRz0BoeiKF50TEH+MGsuwLOLaz64Suo9n4DKBvhPc0TfBe91uZg3BYPH5UpT6Dog==
+cozy-konnector-libs@4.14.11, cozy-konnector-libs@^4.14.11:
+  version "4.14.11"
+  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-4.14.11.tgz#42313381b1225512e10400eb919289e78fbd20c6"
+  integrity sha512-O3HkNwVrO6M/mJA1ukQd/Q34N7cARpRABhKSOUPl1/JCL0sx0g0dlSUv85U62MraECrgT87+Q7eyF8D6r70+lA==
   dependencies:
     bluebird "3.5.3"
     bluebird-retry "0.11.0"

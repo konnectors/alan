@@ -81,9 +81,9 @@ async function start(fields) {
   // add files
   let currentMonthIsReplaced = false
   bills = bills.map(bill => {
-    bill.fileurl = `https://api.alan.eu/api/users/view_settlements/${
+    bill.fileurl = `https://api.alan.eu/api/users/${
       user.userId
-    }?year=${moment(bill.date).format('YYYY')}&month=${moment(bill.date).format(
+    }/settlements?year=${moment(bill.date).format('YYYY')}&month=${moment(bill.date).format(
       'M'
     )}`
     bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`

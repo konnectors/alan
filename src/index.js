@@ -43,12 +43,13 @@ async function start(fields) {
     bills.push.apply(
       bills,
       beneficiary.insurance_profile.settlements
-        .filter(bill => bill.reimbursement_status === 'processed')
+        .filter(bill => bill.estimated_payment_date)
         .map(bill => ({
           vendor: 'alan',
+          vendorRef: bill.id,
           beneficiary: name,
           type: 'health_costs',
-          date: moment(bill.payment_date, 'YYYY-MM-DD').toDate(),
+          date: moment(bill.estimated_payment_date, 'YYYY-MM-DD').toDate(),
           originalDate: moment(bill.care_date, 'YYYY-MM-DD').toDate(),
           subtype: bill.displayed_label,
           description: bill.care_type_desc,
@@ -81,11 +82,11 @@ async function start(fields) {
   // add files
   let currentMonthIsReplaced = false
   bills = bills.map(bill => {
-    bill.fileurl = `https://api.alan.eu/api/users/view_settlements/${
+    bill.fileurl = `https://api.alan.eu/api/users/${
       user.userId
-    }?year=${moment(bill.date).format('YYYY')}&month=${moment(bill.date).format(
-      'M'
-    )}`
+    }/settlements?year=${moment(bill.date).format('YYYY')}&month=${moment(
+      bill.date
+    ).format('M')}`
     bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
     const currentMonth = moment().format('M')
     bill.shouldReplaceFile = doc => {
@@ -105,7 +106,9 @@ async function start(fields) {
   })
 
   await saveBills(bills, fields.folderPath, {
-    identifiers: ['alan']
+    identifiers: ['alan'],
+    keys: ['vendorRef'],
+    shouldUpdate: () => true
   })
 
   const policyId = insurance_profile.current_policy.id

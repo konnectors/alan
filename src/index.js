@@ -47,7 +47,7 @@ async function start(fields) {
     bills.push.apply(
       bills,
       beneficiary.insurance_profile.settlements
-        .filter(bill => bill.estimated_payment_date)
+        .filter(bill => bill.reimbursement_status === 'processed')
         .map(bill => ({
           vendor: 'alan',
           vendorRef: bill.id,
@@ -62,11 +62,7 @@ async function start(fields) {
           originalAmount: bill.total_amount / 100,
           isThirdPartyPayer: bill.origin === 'tiers_payant',
           currency: '€',
-          isRefund: true,
-          metadata: {
-            importDate: new Date(),
-            version: 1
-          }
+          isRefund: true
         }))
     )
   }
@@ -112,7 +108,8 @@ async function start(fields) {
   await saveBills(bills, fields.folderPath, {
     identifiers: ['alan'],
     keys: ['vendorRef'],
-    shouldUpdate: () => true
+    sourceAccount: this._account._id,
+    sourceAccountIdentifier: fields.login
   })
 
   const policyId = insurance_profile.current_policy.id
@@ -129,7 +126,12 @@ async function start(fields) {
         }
       }
     ],
-    fields
+    fields,
+    {
+      contentType: 'application/pdf',
+      sourceAccount: this._account._id,
+      sourceAccountIdentifier: fields.login
+    }
   )
 }
 

@@ -8,9 +8,11 @@ const {
   log,
   errors,
   saveFiles,
-  saveBills
+  saveBills,
+  cozyClient
 } = require('cozy-konnector-libs')
 const jwt = require('jwt-decode')
+const { Document } = require('cozy-doctypes')
 const moment = require('moment')
 const groupBy = require('lodash/groupBy')
 const request = requestFactory({
@@ -26,10 +28,47 @@ const apiUrl = 'https://api.alan.eu'
 module.exports = new BaseKonnector(start)
 
 async function start(fields) {
+  await removeOldBills()
+
   log('info', 'Authenticating ...')
   const user = await authenticate(fields.login, fields.password)
   log('info', 'Successfully logged in')
 
+  let { bills, policyId } = await fetchData(user)
+
+  computeGroupAmounts(bills)
+  linkFiles(bills, user)
+
+  await saveBills(bills, fields.folderPath, {
+    identifiers: ['alan'],
+    keys: ['vendorRef', 'beneficiary', 'date'],
+    sourceAccount: this.accountId,
+    sourceAccountIdentifier: fields.login
+  })
+
+  await saveFiles(
+    [
+      {
+        fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
+        filename: 'Carte_Mutuelle.pdf',
+        shouldReplaceFile: () => true,
+        requestOptions: {
+          auth: {
+            bearer: user.token
+          }
+        }
+      }
+    ],
+    fields,
+    {
+      contentType: 'application/pdf',
+      sourceAccount: this._account._id,
+      sourceAccountIdentifier: fields.login
+    }
+  )
+}
+
+async function fetchData(user) {
   const { beneficiaries, insurance_profile } = await request(
     `${apiUrl}/api/users/${
       user.userId
@@ -50,7 +89,7 @@ async function start(fields) {
         .filter(bill => bill.reimbursement_status === 'processed')
         .map(bill => ({
           vendor: 'alan',
-          vendorRef: bill.id,
+          vendorRef: bill.created_at,
           beneficiary: name,
           type: 'health_costs',
           date: moment(bill.estimated_payment_date, 'YYYY-MM-DD').toDate(),
@@ -67,6 +106,26 @@ async function start(fields) {
     )
   }
 
+  const policyId = insurance_profile.current_policy.id
+
+  return { bills, policyId }
+}
+
+async function authenticate(email, password) {
+  await request(`${baseUrl}/login`)
+  try {
+    const resp = await request.post(`${apiUrl}/auth/login`, {
+      body: { email, password, refresh_token_type: 'web' }
+    })
+    resp.userId = jwt(resp.token).id
+    return resp
+  } catch (err) {
+    log('error', err.message)
+    throw new Error(errors.LOGIN_FAILED)
+  }
+}
+
+function computeGroupAmounts(bills) {
   // find groupAmounts by date
   const groupedBills = groupBy(bills, 'date')
   bills = bills.map(bill => {
@@ -78,8 +137,9 @@ async function start(fields) {
       bill.groupAmount = groupAmount
     return bill
   })
+}
 
-  // add files
+function linkFiles(bills, user) {
   let currentMonthIsReplaced = false
   bills = bills.map(bill => {
     bill.fileurl = `https://api.alan.eu/api/users/${
@@ -104,47 +164,32 @@ async function start(fields) {
     }
     return bill
   })
-
-  await saveBills(bills, fields.folderPath, {
-    identifiers: ['alan'],
-    keys: ['vendorRef'],
-    sourceAccount: this._account._id,
-    sourceAccountIdentifier: fields.login
-  })
-
-  const policyId = insurance_profile.current_policy.id
-  await saveFiles(
-    [
-      {
-        fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
-        filename: 'Carte_Mutuelle.pdf',
-        shouldReplaceFile: () => true,
-        requestOptions: {
-          auth: {
-            bearer: user.token
-          }
-        }
-      }
-    ],
-    fields,
-    {
-      contentType: 'application/pdf',
-      sourceAccount: this._account._id,
-      sourceAccountIdentifier: fields.login
-    }
-  )
 }
 
-async function authenticate(email, password) {
-  await request(`${baseUrl}/login`)
+/**
+ * This function remove old alan bills with old vendorRef attribute which is not a stable id (it
+ * changes every day.
+ * we now use the creation date, which seems to be stable and sharp enough to be unique
+ * Removed bills which are associated to a bank operation will be ignored by cozy-banks and
+ * eventually removed by the association service
+ */
+async function removeOldBills() {
   try {
-    const resp = await request.post(`${apiUrl}/auth/login`, {
-      body: { email, password, refresh_token_type: 'web' }
-    })
-    resp.userId = jwt(resp.token).id
-    return resp
+    class BillsDocument extends Document {}
+    BillsDocument.doctype = 'io.cozy.bills'
+    BillsDocument.registerClient(cozyClient)
+    const billsToRemove = (await BillsDocument.queryAll({
+      vendor: 'alan'
+    })).filter(doc => typeof doc.vendorRef === 'number')
+
+    if (billsToRemove.length) {
+      log('warn', `Found ${billsToRemove.length} old alan bills to remove`)
+      await BillsDocument.deleteAll(billsToRemove)
+      log('warn', `Old alan bills removed`)
+    } else {
+      log('info', 'No old alan bills to remove')
+    }
   } catch (err) {
-    log('error', err.message)
-    throw new Error(errors.LOGIN_FAILED)
+    log('warn', 'error while trying to remove old alan bills : ' + err.message)
   }
 }

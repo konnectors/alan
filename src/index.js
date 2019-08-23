@@ -43,7 +43,8 @@ async function start(fields) {
     identifiers: ['alan'],
     keys: ['vendorRef', 'beneficiary', 'date'],
     sourceAccount: this.accountId,
-    sourceAccountIdentifier: fields.login
+    sourceAccountIdentifier: fields.login,
+    linkBankOperations: false
   })
 
   await saveFiles(

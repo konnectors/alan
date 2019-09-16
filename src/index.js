@@ -142,6 +142,7 @@ function computeGroupAmounts(bills) {
 
 function linkFiles(bills, user) {
   let currentMonthIsReplaced = false
+  let previousMonthIsReplaced = false
   bills = bills.map(bill => {
     bill.fileurl = `https://api.alan.eu/api/users/${
       user.userId
@@ -150,13 +151,25 @@ function linkFiles(bills, user) {
     ).format('M')}`
     bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
     const currentMonth = moment().format('M')
-    bill.shouldReplaceFile = doc => {
-      const isCurrentMonth = moment(doc.date).format('M') === currentMonth
+    const previousMonth = moment()
+      .startOf('month')
+      .subtract(1, 'days')
+      .format('M')
+    bill.shouldReplaceFile = (file, doc) => {
+      const docMonth = Number(moment(doc.date).format('M'))
+      const isCurrentMonth = docMonth === currentMonth
+      const isPreviousMonth = docMonth === previousMonth
+
       // replace current month file only one time
       if (isCurrentMonth && !currentMonthIsReplaced) {
         currentMonthIsReplaced = true
+        return true
       }
-      return !currentMonthIsReplaced
+      if (isPreviousMonth && !previousMonthIsReplaced) {
+        previousMonthIsReplaced = true
+        return true
+      }
+      return false
     }
     bill.requestOptions = {
       auth: {

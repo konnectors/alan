@@ -24,6 +24,8 @@ const request = requestFactory({
 
 const baseUrl = 'https://alan.eu'
 const apiUrl = 'https://api.alan.eu'
+const set = require('lodash/set')
+const get = require('lodash/get')
 
 module.exports = new BaseKonnector(start)
 
@@ -144,6 +146,8 @@ function linkFiles(bills, user) {
   let currentMonthIsReplaced = false
   let previousMonthIsReplaced = false
   bills = bills.map(bill => {
+    set(bill, 'fileAttributes.metadata.checkUpdate', true)
+    bill.fileAttributes.metadata
     bill.fileurl = `https://api.alan.eu/api/users/${
       user.userId
     }/settlements?year=${moment(bill.date).format('YYYY')}&month=${moment(
@@ -156,6 +160,13 @@ function linkFiles(bills, user) {
       .subtract(1, 'days')
       .format('M')
     bill.shouldReplaceFile = (file, doc) => {
+      // update all previous files which were not updated before
+      if (
+        !get(file, 'attributes.metadata.checkUpdate') &&
+        !get(file, 'metadata.checkUpdate')
+      )
+        return true
+
       const docMonth = Number(moment(doc.date).format('M'))
       const isCurrentMonth = docMonth === currentMonth
       const isPreviousMonth = docMonth === previousMonth

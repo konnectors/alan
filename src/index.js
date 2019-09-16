@@ -9,12 +9,14 @@ const {
   errors,
   saveFiles,
   saveBills,
-  cozyClient
+  cozyClient,
+  utils
 } = require('cozy-konnector-libs')
 const jwt = require('jwt-decode')
 const { Document } = require('cozy-doctypes')
 const moment = require('moment')
 const groupBy = require('lodash/groupBy')
+const keyBy = require('lodash/keyBy')
 const request = requestFactory({
   // debug: true,
   cheerio: false,
@@ -31,6 +33,7 @@ module.exports = new BaseKonnector(start)
 
 async function start(fields) {
   await removeOldBills()
+  await cleanBillsWithTrashedFiles()
 
   log('info', 'Authenticating ...')
   const user = await authenticate(fields.login, fields.password)
@@ -65,7 +68,7 @@ async function start(fields) {
     fields,
     {
       contentType: 'application/pdf',
-      sourceAccount: this._account._id,
+      sourceAccount: this.accountId,
       sourceAccountIdentifier: fields.login
     }
   )
@@ -216,5 +219,35 @@ async function removeOldBills() {
     }
   } catch (err) {
     log('warn', 'error while trying to remove old alan bills : ' + err.message)
+  }
+}
+
+async function cleanBillsWithTrashedFiles() {
+  const trashedFiles = await utils.queryAll('io.cozy.files', {
+    dir_id: 'io.cozy.files.trash-dir'
+  })
+  const trashedFileIndex = keyBy(trashedFiles, '_id')
+  const alanBills = await utils.queryAll('io.cozy.bills', {
+    vendor: 'alan'
+  })
+
+  const alanBillsToRemove = alanBills.filter(
+    bill =>
+      trashedFileIndex[
+        get(bill, 'invoice', '')
+          .split(':')
+          .pop()
+      ]
+  )
+  if (alanBillsToRemove.length) {
+    log(
+      'warn',
+      `Will remove ${
+        alanBillsToRemove.length
+      } bills associated to files in trash`
+    )
+
+    await utils.batchDelete('io.cozy.bills', alanBillsToRemove)
+    log('info', 'done removing')
   }
 }

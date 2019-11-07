@@ -76,9 +76,7 @@ async function start(fields) {
 
 async function fetchData(user) {
   const { beneficiaries, insurance_profile } = await request(
-    `${apiUrl}/api/users/${
-      user.userId
-    }?expand=beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.settlements,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,invoices,insurance_profile,address,current_billing_iban,current_settlement_iban,current_exemption.company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_plan,company.current_contract.discounts,insurance_profile.current_policy.contract.current_plan,insurance_profile.current_policy.contract.contractee,legacy_health_contract,current_contract.madelin_attestations,current_contract.amendments,current_contract.current_plan,accountant,insurance_documents,insurance_documents.quotes,authorized_billing_ibans`,
+    `${apiUrl}/api/users/${user.userId}?expand=beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.settlements,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,invoices,insurance_profile,address,current_billing_iban,current_settlement_iban,current_exemption.company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_plan,company.current_contract.discounts,insurance_profile.current_policy.contract.current_plan,insurance_profile.current_policy.contract.contractee,legacy_health_contract,current_contract.madelin_attestations,current_contract.amendments,current_contract.current_plan,accountant,insurance_documents,insurance_documents.quotes,authorized_billing_ibans`,
     {
       auth: {
         bearer: user.token
@@ -242,9 +240,7 @@ async function cleanBillsWithTrashedFiles() {
   if (alanBillsToRemove.length) {
     log(
       'warn',
-      `Will remove ${
-        alanBillsToRemove.length
-      } bills associated to files in trash`
+      `Will remove ${alanBillsToRemove.length} bills associated to files in trash`
     )
 
     await utils.batchDelete('io.cozy.bills', alanBillsToRemove)

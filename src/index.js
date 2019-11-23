@@ -147,7 +147,7 @@ function linkFiles(bills, user) {
   let currentMonthIsReplaced = false
   let previousMonthIsReplaced = false
   bills = bills.map(bill => {
-    set(bill, 'fileAttributes.metadata.checkUpdate', true)
+    set(bill, 'fileAttributes.metadata.checkUpdate', undefined)
     bill.fileAttributes.metadata
     bill.fileurl = `https://api.alan.eu/api/users/${
       user.userId
@@ -155,19 +155,14 @@ function linkFiles(bills, user) {
       bill.date
     ).format('M')}`
     bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
-    const currentMonth = moment().format('M')
-    const previousMonth = moment()
-      .startOf('month')
-      .subtract(1, 'days')
-      .format('M')
+    const currentMonth = Number(moment().format('M'))
+    const previousMonth = Number(
+      moment()
+        .startOf('month')
+        .subtract(1, 'days')
+        .format('M')
+    )
     bill.shouldReplaceFile = (file, doc) => {
-      // update all previous files which were not updated before
-      if (
-        !get(file, 'attributes.metadata.checkUpdate') &&
-        !get(file, 'metadata.checkUpdate')
-      )
-        return true
-
       const docMonth = Number(moment(doc.date).format('M'))
       const isCurrentMonth = docMonth === currentMonth
       const isPreviousMonth = docMonth === previousMonth

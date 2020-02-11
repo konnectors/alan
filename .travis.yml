@@ -3,7 +3,6 @@ node_js:
 - '12'
 env:
   global:
-  - DEPLOY_REPOSITORY="git@github.com:konnectors/alan.git"
   # REGISTRY_TOKEN(editor=cozy, app=alan)
   - secure: R1S1Cqgl96BOd2VDL4N7C6LFh2rdlquPoJK3xzht6XHbr66OYvBAORKKdlZqXyf20whBOXPyGggE8t6wyNFFz9ivm+ApgzrawKsyeAIh9tY1cJ/WNSNxnVO5hX4FRtQo3E0M7Vfwrt7XUfwezSVAbdSMrCm5df+/O6Sllm0jcWB5/P5a8ZEcywxorG5N74tByoFZEQRVGL9fPrANkQhrSZqNWHWMF9oD3ZH7lAewiVNAYDTiZvCivOh8rLMvwEmWW/78KWbII+3S+7JGC5PM/seXJN/IBO/9yQwFo8Id4d2+koJt5FjfyvK8aa7hIYDdwKpA/QSm7LoWWxGjiytSq5tJSJjXdphGPbzWwwuBX+e3eaaEZHc0EUcJ3tCLR+jAcKjfZU9IVGO2aHt5mZueS70Mc/O5A3TSwbebpgnDVeef1yIQ2c6SxmZlL4lk6aR4F1RxJ83eDzIiaJeraJcznEHIlvICimtZKeHsg6482MSBNW4SQK3qycI+xr97DgRQQzVNcXh8cvnAyc+oiG4LxIiTKAIhfE14KakfS2JjqUjzFsOyiCqrbxfMKTnXAGgolwqA+bXQQclFnCYKA4UXei7VRpepbQ3N6XEg6WDizBdhfqnKIdG580x5JPAqFmytQIDxxPvWquH6ogpXq4wmKrjQ81VdoP2ppWjlgfUKek8=
   # MATTERMOST_HOOK_URL

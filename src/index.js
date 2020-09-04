@@ -6,17 +6,11 @@ const {
   BaseKonnector,
   requestFactory,
   log,
-  errors,
-  saveFiles,
-  saveBills,
-  cozyClient,
-  utils
+  errors
 } = require('cozy-konnector-libs')
 const jwt = require('jwt-decode')
-const { Document } = require('cozy-doctypes')
 const moment = require('moment')
 const groupBy = require('lodash/groupBy')
-const keyBy = require('lodash/keyBy')
 const request = requestFactory({
   // debug: true,
   cheerio: false,
@@ -27,32 +21,25 @@ const request = requestFactory({
 const baseUrl = 'https://alan.eu'
 const apiUrl = 'https://api.alan.eu'
 const set = require('lodash/set')
-const get = require('lodash/get')
 
 module.exports = new BaseKonnector(start)
 
 async function start(fields) {
-  await removeOldBills()
-  await cleanBillsWithTrashedFiles()
-
-  log('info', 'Authenticating ...')
-  const user = await authenticate(fields.login, fields.password)
-  log('info', 'Successfully logged in')
+  const user = await authenticate.bind(this)(fields.login, fields.password)
 
   let { bills, policyId } = await fetchData(user)
 
   computeGroupAmounts(bills)
   linkFiles(bills, user)
 
-  await saveBills(bills, fields.folderPath, {
+  await this.saveBills(bills, fields.folderPath, {
     identifiers: ['alan'],
     keys: ['vendorRef', 'beneficiary', 'date'],
-    sourceAccount: this.accountId,
-    sourceAccountIdentifier: fields.login,
+    fileIdAttributes: ['filename'],
     linkBankOperations: false
   })
 
-  await saveFiles(
+  await this.saveFiles(
     [
       {
         fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
@@ -67,9 +54,8 @@ async function start(fields) {
     ],
     fields,
     {
-      contentType: 'application/pdf',
-      sourceAccount: this.accountId,
-      sourceAccountIdentifier: fields.login
+      contentType: true,
+      fileIdAttributes: ['filename']
     }
   )
 }
@@ -116,12 +102,14 @@ async function fetchData(user) {
 }
 
 async function authenticate(email, password) {
+  await this.deactivateAutoSuccessfulLogin()
   await request(`${baseUrl}/login`)
   try {
     const resp = await request.post(`${apiUrl}/auth/login`, {
       body: { email, password, refresh_token_type: 'web' }
     })
     resp.userId = jwt(resp.token).id
+    await this.notifySuccessfulLogin()
     return resp
   } catch (err) {
     log('error', err.message)
@@ -185,60 +173,4 @@ function linkFiles(bills, user) {
     }
     return bill
   })
-}
-
-/**
- * This function remove old alan bills with old vendorRef attribute which is not a stable id (it
- * changes every day.
- * we now use the creation date, which seems to be stable and sharp enough to be unique
- * Removed bills which are associated to a bank operation will be ignored by cozy-banks and
- * eventually removed by the association service
- */
-async function removeOldBills() {
-  try {
-    class BillsDocument extends Document {}
-    BillsDocument.doctype = 'io.cozy.bills'
-    BillsDocument.registerClient(cozyClient)
-    const billsToRemove = (await BillsDocument.queryAll({
-      vendor: 'alan'
-    })).filter(doc => typeof doc.vendorRef === 'number')
-
-    if (billsToRemove.length) {
-      log('warn', `Found ${billsToRemove.length} old alan bills to remove`)
-      await BillsDocument.deleteAll(billsToRemove)
-      log('warn', `Old alan bills removed`)
-    } else {
-      log('info', 'No old alan bills to remove')
-    }
-  } catch (err) {
-    log('warn', 'error while trying to remove old alan bills : ' + err.message)
-  }
-}
-
-async function cleanBillsWithTrashedFiles() {
-  const trashedFiles = await utils.queryAll('io.cozy.files', {
-    dir_id: 'io.cozy.files.trash-dir'
-  })
-  const trashedFileIndex = keyBy(trashedFiles, '_id')
-  const alanBills = await utils.queryAll('io.cozy.bills', {
-    vendor: 'alan'
-  })
-
-  const alanBillsToRemove = alanBills.filter(
-    bill =>
-      trashedFileIndex[
-        get(bill, 'invoice', '')
-          .split(':')
-          .pop()
-      ]
-  )
-  if (alanBillsToRemove.length) {
-    log(
-      'warn',
-      `Will remove ${alanBillsToRemove.length} bills associated to files in trash`
-    )
-
-    await utils.batchDelete('io.cozy.bills', alanBillsToRemove)
-    log('info', 'done removing')
-  }
 }

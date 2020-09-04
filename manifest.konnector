@@ -56,8 +56,8 @@
   ],
   "locales": {
     "fr": {
-      "short_description": "Récupère vos remboursements",
-      "long_description": "Récupère vos remboursements Alan",
+      "short_description": "Récupère vos relevés de remboursement Alan et votre carte de mutuelle",
+      "long_description": "<p>Récupère les relévés de remboursement de votre assurance santé complémentaire, pour les adhérents particuliers ou salariés.</p><br><p>Si vous avez connecté le compte bancaire avec lequel vous effectuez vos dépenses de santé, ceci activera le suivi de remboursement dans l'application Cozy Banks.</p><p>Vous devez auparavant vous inscrire sur le service de relevés de santé en ligne sur le site internet d'Alan.</p>",
       "permissions": {
         "bank operations": {
           "description": "Utilisé pour relier les factures à des operations bancaires"
@@ -75,7 +75,7 @@
     },
     "en": {
       "short_description": "Fetch your reimbursements",
-      "long_description": "Fetch you Alan reimbursements",
+      "long_description": "<p>This connector fetches your reimbursement statements for your complementary health insurance.</p><br><p>If you have connected the bank account with which you make your medical expenses, this will enable refund tracking in the Cozy Banks app.</p>",
       "permissions": {
         "bank operations": {
           "description": "Required to link bank operations to bills"

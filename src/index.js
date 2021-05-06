@@ -27,7 +27,7 @@ module.exports = new BaseKonnector(start)
 async function start(fields) {
   const user = await authenticate.bind(this)(fields.login, fields.password)
 
-  let { bills, policyId } = await fetchData(user)
+  let { bills, tpCardIdentifier } = await fetchData(user)
 
   computeGroupAmounts(bills)
   linkFiles(bills, user)
@@ -42,7 +42,7 @@ async function start(fields) {
   await this.saveFiles(
     [
       {
-        fileurl: `${apiUrl}/api/policies/tp-card/${policyId}?t=${Date.now()}`,
+        fileurl: `${apiUrl}/api/users/${tpCardIdentifier}/tp-card?t=${Date.now()}`,
         filename: 'Carte_Mutuelle.pdf',
         shouldReplaceFile: () => true,
         requestOptions: {
@@ -61,7 +61,10 @@ async function start(fields) {
 }
 
 async function fetchData(user) {
-  const { beneficiaries, insurance_profile } = await request(
+  const {
+    beneficiaries,
+    tp_card_identifier
+  } = await request(
     `${apiUrl}/api/users/${user.userId}?expand=beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.settlements,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,invoices,insurance_profile,address,current_billing_iban,current_settlement_iban,current_exemption.company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_plan,company.current_contract.discounts,insurance_profile.current_policy.contract.current_plan,insurance_profile.current_policy.contract.contractee,legacy_health_contract,current_contract.madelin_attestations,current_contract.amendments,current_contract.current_plan,accountant,insurance_documents,insurance_documents.quotes,authorized_billing_ibans`,
     {
       auth: {
@@ -96,9 +99,9 @@ async function fetchData(user) {
     )
   }
 
-  const policyId = insurance_profile.current_policy.id
+  const tpCardIdentifier = tp_card_identifier.replace(/\s/g, '')
 
-  return { bills, policyId }
+  return { bills, tpCardIdentifier }
 }
 
 async function authenticate(email, password) {

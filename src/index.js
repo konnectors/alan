@@ -61,10 +61,7 @@ async function start(fields) {
 }
 
 async function fetchData(user) {
-  const {
-    beneficiaries,
-    tp_card_identifier
-  } = await request(
+  const { beneficiaries, tp_card_identifier } = await request(
     `${apiUrl}/api/users/${user.userId}?expand=beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.settlements,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,invoices,insurance_profile,address,current_billing_iban,current_settlement_iban,current_exemption.company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_prevoyance_contract.prevoyance_plan,company.current_contract.current_plan,company.current_contract.discounts,insurance_profile.current_policy.contract.current_plan,insurance_profile.current_policy.contract.contractee,legacy_health_contract,current_contract.madelin_attestations,current_contract.amendments,current_contract.current_plan,accountant,insurance_documents,insurance_documents.quotes,authorized_billing_ibans`,
     {
       auth: {
@@ -116,7 +113,11 @@ async function authenticate(email, password) {
     return resp
   } catch (err) {
     log('error', err.message)
-    throw new Error(errors.LOGIN_FAILED)
+    if (err.statusCode === 401) {
+      throw new Error(errors.LOGIN_FAILED)
+    } else {
+      throw new Error(errors.VENDOR_DOWN)
+    }
   }
 }
 

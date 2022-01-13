@@ -50,6 +50,16 @@ async function start(fields) {
       {
         fileurl: `${apiUrl}/api/users/${tpCardIdentifier}/tp-card?t=${Date.now()}`,
         filename: 'Carte_Mutuelle.pdf',
+        fileAttributes: {
+          metadata: {
+            contentAuthor: 'alan.com',
+            datetime: utils.formatDate(new Date()),
+            datetimeLabel: `issueDate`,
+            isSubscription: false,
+            carbonCopy: true,
+            qualification: Qualification.getByLabel('health_insurance_card')
+          }
+        },
         shouldReplaceFile: () => true,
         requestOptions: {
           auth: {

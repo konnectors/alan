@@ -18,7 +18,7 @@ const models = cozyClient.new.models
 const { Qualification } = models.document
 
 const request = requestFactory({
-  // debug: true,
+  debug: false,
   cheerio: false,
   json: true,
   jar: true
@@ -40,7 +40,8 @@ async function start(fields) {
   await this.saveBills(bills, fields.folderPath, {
     identifiers: ['alan'],
     keys: ['vendorRef', 'beneficiary', 'date'],
-    fileIdAttributes: ['vendorRef'],
+    // Here we are using filename for deduplication for matching old version
+    fileIdAttributes: ['filename'],
     linkBankOperations: false,
     sourceAccountIdentifier: fields.login
   })
@@ -123,7 +124,7 @@ async function fetchData(user) {
           date: moment(bill.estimated_payment_date, 'YYYY-MM-DD').toDate(),
           originalDate: moment(bill.care_date, 'YYYY-MM-DD').toDate(),
           subtype: bill.care_acts[0].display_label,
-          socialSecurityBase: bill.care_acts[0].ss_base / 100,
+          socialSecurityRefund: bill.care_acts[0].ss_base / 100,
           amount: bill.total_reimbursed_by_alan / 100,
           originalAmount: bill.total_covered_amount / 100,
           isThirdPartyPayer:
@@ -193,9 +194,7 @@ function linkFiles(bills, user) {
     }/decomptes?year=${moment(bill.date).format('YYYY')}&month=${moment(
       bill.date
     ).format('M')}`
-    bill.filename = `${moment(bill.date).format(
-      'YYYY_MM'
-    )}_remboursement_alan.pdf`
+    bill.filename = `${moment(bill.date).format('YYYY_MM')}_alan.pdf`
     const currentMonth = Number(moment().format('M'))
     const previousMonth = Number(
       moment()

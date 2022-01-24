@@ -36,6 +36,9 @@
     "bank operations": {
       "type": "io.cozy.bank.operations"
     },
+    "carbon_copy": {
+      "type": "io.cozy.certified.carbon_copy"
+    },
     "bills": {
       "type": "io.cozy.bills"
     },
@@ -62,6 +65,9 @@
         "bank operations": {
           "description": "Utilisé pour relier les factures à des operations bancaires"
         },
+        "carboncopy": {
+          "description": "Utilisé pour certifier que vos fichiers sont copie conforme avec les documents d'origine"
+        },
         "bills": {
           "description": "Utilisé pour sauver les données des factures"
         },
@@ -80,6 +86,9 @@
         "bank operations": {
           "description": "Required to link bank operations to bills"
         },
+        "carboncopy": {
+          "description": "Required for carbon copy documents"
+        },
         "bills": {
           "description": "Required to save the bills data"
         },
@@ -93,10 +102,16 @@
     }
   },
   "banksTransactionRegExp": "\\balan\\b",
+  "qualification_labels":[
+    "health_invoice"
+  ],
   "features": [
     "LOGIN_OK",
     "METADATA_DEDUP",
-    "HEALTH"
+    "HEALTH",
+    "CARBON_COPY",
+    "DOC_QUALIFICATION_V2",
+    "SENTRY_V2"
   ],
   "manifest_version": "2"
 }

@@ -40,7 +40,14 @@ async function start(fields) {
     keys: ['vendorRef', 'beneficiary', 'date'],
     // Here we are using filename for deduplication for matching old version
     fileIdAttributes: ['filename'],
-    sourceAccountIdentifier: fields.login
+    sourceAccountIdentifier: fields.login,
+    shouldUpdate: (
+      entry,
+      dbEntry // fixes wrong values due to version 2.6.0-beta.1
+    ) =>
+      entry.amount !== dbEntry.amount ||
+      entry.isThirdPartyPayer !== dbEntry.isThirdPartyPayer ||
+      entry.originalAmount !== dbEntry.originalAmount
   })
 
   await this.saveFiles(

@@ -113,7 +113,6 @@ async function fetchData(user) {
     try {
       for (let i = 1; i < documents.length; i++) {
         if (documents[i] === undefined) {
-          log('debug', documents[i].beneficiaries_insurance_profile_ids)
           beneficiariesId = documents[i].beneficiaries_insurance_profile_ids
         }
       }

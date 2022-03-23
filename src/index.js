@@ -100,32 +100,30 @@ async function fetchData(user) {
       }
     }
   )
+  const documents = decomptes.visible_insurance_documents
   log(
     'debug',
-    decomptes.visible_insurance_documents
-      ? 'account contains visible_insurance_documents'
-      : 'no visible_insurance_documents found'
+    documents ? `There is ${documents.length} docs` : 'no documents founded'
   )
-  const documents = decomptes.visible_insurance_documents
-  log('debug', documents ? 'There is docs' : 'no documents founded')
+  // This loop test if the document have an id, sometimes on Alan website, files did not have beneficiaries_insurance_profile_ids.
   let beneficiariesId
-  if (documents[0].beneficiaries_insurance_profile_ids === undefined) {
-    try {
-      for (let i = 1; i < documents.length; i++) {
-        if (documents[i] === undefined) {
-          beneficiariesId = documents[i].beneficiaries_insurance_profile_ids
-        }
-      }
-    } catch (err) {
-      log('debug', err)
+  for (let i = 0; i < documents.length; i++) {
+    const testId = documents[i].beneficiaries_insurance_profile_ids[0]
+    if (testId === undefined) {
+      log('debug', 'No ids founded on this doc, continue')
+      continue
+    } else {
+      // If an id is founded, loop break as we just need one
+      beneficiariesId = documents[i].beneficiaries_insurance_profile_ids[0]
+      break
     }
-  } else {
-    beneficiariesId = documents[0].beneficiaries_insurance_profile_ids[0]
   }
+
   log(
     'debug',
     beneficiariesId ? 'beneficiariesId founded' : 'No beneficiariesId founded'
   )
+  // Then it send the request with the founded id. For now it can be any beneficiaries's beneficiaries_insurance_profile_ids from the account
   const events = await request(
     `${apiUrl}/api/insurance_profiles/${beneficiariesId}/care_events_public`,
     {
@@ -135,9 +133,9 @@ async function fetchData(user) {
     }
   )
 
+  // With the response, we extract the datas and prepare an array to give to saveBills
   let bills = []
   for (const beneficiary of beneficiaries) {
-    log('debug', `Hit the loop`)
     const name = beneficiary.insurance_profile.user.normalized_full_name
     bills.push.apply(
       bills,

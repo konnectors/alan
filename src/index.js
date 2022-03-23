@@ -7,15 +7,15 @@ const {
   requestFactory,
   log,
   errors,
-  utils
-  // cozyClient
+  utils,
+  cozyClient
 } = require('cozy-konnector-libs')
 const jwt = require('jwt-decode')
 const moment = require('moment')
 const groupBy = require('lodash/groupBy')
 
-// const models = cozyClient.new.models
-// const { Qualification } = models.document
+const models = cozyClient.new.models
+const { Qualification } = models.document
 
 const request = requestFactory({
   debug: false,
@@ -61,8 +61,8 @@ async function start(fields) {
             datetime: utils.formatDate(new Date()),
             datetimeLabel: `issueDate`,
             isSubscription: false,
-            carbonCopy: true
-            // qualification: Qualification.getByLabel('health_insurance_card')
+            carbonCopy: true,
+            qualification: Qualification.getByLabel('health_insurance_card')
           }
         },
         shouldReplaceFile: () => true,
@@ -108,13 +108,27 @@ async function fetchData(user) {
   )
   const documents = decomptes.visible_insurance_documents
   log('debug', documents ? 'There is docs' : 'no documents founded')
-  const beneficiariesIds = documents[0].beneficiaries_insurance_profile_ids[0]
+  let beneficiariesId
+  if (documents[0].beneficiaries_insurance_profile_ids === undefined) {
+    try {
+      for (let i = 1; i < documents.length; i++) {
+        if (documents[i] === undefined) {
+          log('debug', documents[i].beneficiaries_insurance_profile_ids)
+          beneficiariesId = documents[i].beneficiaries_insurance_profile_ids
+        }
+      }
+    } catch (err) {
+      log('debug', err)
+    }
+  } else {
+    beneficiariesId = documents[0].beneficiaries_insurance_profile_ids[0]
+  }
   log(
     'debug',
-    beneficiariesIds ? 'beneficiariesId founded' : 'No beneficiariesIds founded'
+    beneficiariesId ? 'beneficiariesId founded' : 'No beneficiariesId founded'
   )
   const events = await request(
-    `${apiUrl}/api/insurance_profiles/${beneficiariesIds}/care_events_public`,
+    `${apiUrl}/api/insurance_profiles/${beneficiariesId}/care_events_public`,
     {
       auth: {
         bearer: user.token
@@ -151,8 +165,8 @@ async function fetchData(user) {
               datetime: moment(bill.care_date, 'YYYY-MM-DD').toDate(),
               datetimeLabel: `issueDate`,
               isSubscription: false,
-              carbonCopy: true
-              // qualification: Qualification.getByLabel('health_invoice')
+              carbonCopy: true,
+              qualification: Qualification.getByLabel('health_invoice')
             }
           }
         }))

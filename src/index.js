@@ -7,15 +7,15 @@ const {
   requestFactory,
   log,
   errors,
-  utils,
-  cozyClient
+  utils
+  // cozyClient
 } = require('cozy-konnector-libs')
 const jwt = require('jwt-decode')
 const moment = require('moment')
 const groupBy = require('lodash/groupBy')
 
-const models = cozyClient.new.models
-const { Qualification } = models.document
+// const models = cozyClient.new.models
+// const { Qualification } = models.document
 
 const request = requestFactory({
   debug: false,
@@ -61,8 +61,8 @@ async function start(fields) {
             datetime: utils.formatDate(new Date()),
             datetimeLabel: `issueDate`,
             isSubscription: false,
-            carbonCopy: true,
-            qualification: Qualification.getByLabel('health_insurance_card')
+            carbonCopy: true
+            // qualification: Qualification.getByLabel('health_insurance_card')
           }
         },
         shouldReplaceFile: () => true,
@@ -82,6 +82,7 @@ async function start(fields) {
 }
 
 async function fetchData(user) {
+  log('debug', user.userId ? 'userId detected' : 'no userId detected')
   const { beneficiaries, tp_card_identifier } = await request(
     `${apiUrl}/api/users/${user.userId}?expand=address,admined_companies,beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,beneficiaries.insurance_profile.current_attestation,beneficiaries.insurance_profile.internalised_teletransmission_statuses_by_ssn,beneficiaries.insurance_profile.internalisation_switch_date,beneficiaries.insurance_profile.latest_tp_card,current_contract.amendments,current_contract.current_amendment,current_exemption,current_exemption.current_justification,current_plan,current_plan.price_rules,current_plan.health_coverage.rendered_guarantees_with_updated_emojis,insurance_profile.current_policy.contract,insurance_profile.current_policy.pec_requests,insurance_profile.current_policy.tp_card_coverages,insurance_profile.current_policy.option_contract,insurance_profile.latest_tp_card,insurance_profile,legacy_health_contract,visible_notifications,feedback`,
     {
@@ -99,8 +100,19 @@ async function fetchData(user) {
       }
     }
   )
+  log(
+    'debug',
+    decomptes.visible_insurance_documents
+      ? 'account contains visible_insurance_documents'
+      : 'no visible_insurance_documents found'
+  )
   const documents = decomptes.visible_insurance_documents
+  log('debug', documents ? 'There is docs' : 'no documents founded')
   const beneficiariesIds = documents[0].beneficiaries_insurance_profile_ids[0]
+  log(
+    'debug',
+    beneficiariesIds ? 'beneficiariesId founded' : 'No beneficiariesIds founded'
+  )
   const events = await request(
     `${apiUrl}/api/insurance_profiles/${beneficiariesIds}/care_events_public`,
     {
@@ -112,8 +124,8 @@ async function fetchData(user) {
 
   let bills = []
   for (const beneficiary of beneficiaries) {
+    log('debug', `Hit the loop`)
     const name = beneficiary.insurance_profile.user.normalized_full_name
-
     bills.push.apply(
       bills,
       events
@@ -139,8 +151,8 @@ async function fetchData(user) {
               datetime: moment(bill.care_date, 'YYYY-MM-DD').toDate(),
               datetimeLabel: `issueDate`,
               isSubscription: false,
-              carbonCopy: true,
-              qualification: Qualification.getByLabel('health_invoice')
+              carbonCopy: true
+              // qualification: Qualification.getByLabel('health_invoice')
             }
           }
         }))

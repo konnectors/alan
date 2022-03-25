@@ -82,6 +82,7 @@ async function start(fields) {
 }
 
 async function fetchData(user) {
+  log('debug', user.userId ? 'userId detected' : 'no userId detected')
   const { beneficiaries, tp_card_identifier } = await request(
     `${apiUrl}/api/users/${user.userId}?expand=address,admined_companies,beneficiaries.insurance_profile.legacy_coverages,beneficiaries.insurance_profile.teletransmission_status_to_display,beneficiaries.insurance_profile.user.current_settlement_iban,beneficiaries.insurance_profile.current_attestation,beneficiaries.insurance_profile.internalised_teletransmission_statuses_by_ssn,beneficiaries.insurance_profile.internalisation_switch_date,beneficiaries.insurance_profile.latest_tp_card,current_contract.amendments,current_contract.current_amendment,current_exemption,current_exemption.current_justification,current_plan,current_plan.price_rules,current_plan.health_coverage.rendered_guarantees_with_updated_emojis,insurance_profile.current_policy.contract,insurance_profile.current_policy.pec_requests,insurance_profile.current_policy.tp_card_coverages,insurance_profile.current_policy.option_contract,insurance_profile.latest_tp_card,insurance_profile,legacy_health_contract,visible_notifications,feedback`,
     {
@@ -100,9 +101,31 @@ async function fetchData(user) {
     }
   )
   const documents = decomptes.visible_insurance_documents
-  const beneficiariesIds = documents[0].beneficiaries_insurance_profile_ids[0]
+  log(
+    'debug',
+    documents ? `There is ${documents.length} docs` : 'no documents founded'
+  )
+  // This loop test if the document have an id, sometimes on Alan website, files did not have beneficiaries_insurance_profile_ids.
+  let beneficiariesId
+  for (let i = 0; i < documents.length; i++) {
+    const testId = documents[i].beneficiaries_insurance_profile_ids[0]
+    if (testId === undefined) {
+      log('debug', 'No ids founded on this doc, continue')
+      continue
+    } else {
+      // If an id is founded, loop break as we just need one
+      beneficiariesId = documents[i].beneficiaries_insurance_profile_ids[0]
+      break
+    }
+  }
+
+  log(
+    'debug',
+    beneficiariesId ? 'beneficiariesId founded' : 'No beneficiariesId founded'
+  )
+  // Then it send the request with the founded id. For now it can be any beneficiaries's beneficiaries_insurance_profile_ids from the account
   const events = await request(
-    `${apiUrl}/api/insurance_profiles/${beneficiariesIds}/care_events_public`,
+    `${apiUrl}/api/insurance_profiles/${beneficiariesId}/care_events_public`,
     {
       auth: {
         bearer: user.token
@@ -110,10 +133,10 @@ async function fetchData(user) {
     }
   )
 
+  // With the response, we extract the datas and prepare an array to give to saveBills
   let bills = []
   for (const beneficiary of beneficiaries) {
     const name = beneficiary.insurance_profile.user.normalized_full_name
-
     bills.push.apply(
       bills,
       events

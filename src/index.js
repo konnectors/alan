@@ -105,27 +105,10 @@ async function fetchData(user) {
     'debug',
     documents ? `There is ${documents.length} docs` : 'no documents founded'
   )
-  // This loop test if the document have an id, sometimes on Alan website, files did not have beneficiaries_insurance_profile_ids.
-  let beneficiariesId
-  for (let i = 0; i < documents.length; i++) {
-    const testId = documents[i].beneficiaries_insurance_profile_ids[0]
-    if (testId === undefined) {
-      log('debug', 'No ids founded on this doc, continue')
-      continue
-    } else {
-      // If an id is founded, loop break as we just need one
-      beneficiariesId = documents[i].beneficiaries_insurance_profile_ids[0]
-      break
-    }
-  }
 
-  log(
-    'debug',
-    beneficiariesId ? 'beneficiariesId founded' : 'No beneficiariesId founded'
-  )
-  // Then it send the request with the founded id. For now it can be any beneficiaries's beneficiaries_insurance_profile_ids from the account
+  // Send the request with the account owner's beneficiary_insurance_profile_id
   const events = await request(
-    `${apiUrl}/api/insurance_profiles/${beneficiariesId}/care_events_public`,
+    `${apiUrl}/api/insurance_profiles/${beneficiaries[0].insurance_profile.id}/care_events_public`,
     {
       auth: {
         bearer: user.token

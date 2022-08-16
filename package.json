@@ -1,6 +1,6 @@
 {
   "name": "cozy-konnector-alan",
-  "version": "2.9.0",
+  "version": "2.8.0",
   "description": "",
   "repository": {
     "type": "git",
@@ -9,7 +9,6 @@
   "keywords": [],
   "author": "Cozy Cloud",
   "license": "AGPL-3.0",
-  "main": "./src/index.js",
   "eslintConfig": {
     "extends": [
       "cozy-app"

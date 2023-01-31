@@ -9,7 +9,7 @@
   "cookie_domains": [
     "https://api.alan.com"
   ],
-  "source": "git@github.com:konnectors/cozy-konnector-template.git",
+  "source": "git://github.com/konnectors/alan.git",
   "editor": "Cozy",
   "vendor_link": "https://alan.com/about/life-at-alan",
   "categories": [

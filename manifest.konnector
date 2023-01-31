@@ -25,17 +25,11 @@
     "carbon_copy": {
       "type": "io.cozy.certified.carbon_copy"
     },
-    "bank operations": {
-      "type": "io.cozy.bank.operations"
-    },
     "bills": {
       "type": "io.cozy.bills"
     },
     "files": {
       "type": "io.cozy.files"
-    },
-    "accounts": {
-      "type": "io.cozy.accounts"
     },
     "identities": {
       "type": "io.cozy.identities"
@@ -54,17 +48,14 @@
       "short_description": "Récupère vos factures Alan",
       "long_description": "Récupère vos factures Alan sur le site respectif. Une fois votre authentication effectuée, le connecteur va sauvegardée vos factures disponibles.",
       "permissions": {
-        "bank operations": {
-          "description": "Utilisé pour relier les factures à des operations bancaires"
-        },
         "bills": {
           "description": "Utilisé pour sauver les données des factures"
         },
         "files": {
           "description": "Utilisé pour sauvegarder les factures"
         },
-        "accounts": {
-          "description": "Utilisé pour obtenir les données du compte"
+        "carboncopy": {
+          "description": "Utilisé pour certifier que vos fichiers sont copie conforme avec les documents d'origine"
         }
       }
     },
@@ -72,17 +63,14 @@
       "short_description": "Fetch a list of Alan invoices",
       "long_description": "Fetch a list of Alan invoices on the respective websites. Once you've been authenticated, the konnector will save your available bills.",
       "permissions": {
-        "bank operations": {
-          "description": "Required to link bank operations to bills"
-        },
         "bills": {
           "description": "Required to save the bills data"
         },
         "files": {
           "description": "Required to save the bills"
         },
-        "accounts": {
-          "description": "Required to get the account's data"
+        "carboncopy": {
+          "description": "Required for carbon copy documents"
         }
       }
     }

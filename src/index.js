@@ -293,8 +293,8 @@ class TemplateContentScript extends ContentScript {
       userDatas.jsonDocuments,
       userDatas.jsonEvents
     )
-    this.computeGroupAmounts(bills)
-    this.linkFiles(bills, userDatas.beneficiariesWithIds, token.value)
+    bills = this.computeGroupAmounts(bills)
+    bills = this.linkFiles(bills, userDatas.beneficiariesWithIds, token.value)
     const tpCard = await this.getTpCard(tpCardIdentifier, token.value)
     await Promise.all([
       this.sendToPilot({ tpCard }),
@@ -349,7 +349,7 @@ class TemplateContentScript extends ContentScript {
     this.log('Starting computeGroupAmount')
     // find groupAmounts by date
     const groupedBills = groupBy(bills, 'date')
-    bills = bills.map(bill => {
+    return bills.map(bill => {
       if (bill.isThirdPartyPayer) return bill
       const groupAmount = groupedBills[bill.date]
         .filter(bill => !bill.isThirdPartyPayer)
@@ -358,13 +358,12 @@ class TemplateContentScript extends ContentScript {
         bill.groupAmount = parseFloat(groupAmount.toFixed(2))
       return bill
     })
-    this.log('Ending computeGroupAmount')
   }
 
   linkFiles(bills, beneficiariesWithIds, token) {
     let currentMonthIsReplaced = false
     let previousMonthIsReplaced = false
-    bills = bills.map(bill => {
+    return bills.map(bill => {
       bill.fileurl = `https://api.alan.com/api/users/${
         beneficiariesWithIds[0].userId
       }/decomptes?year=${format(new Date(bill.date), 'yyyy')}&month=${format(
@@ -456,15 +455,16 @@ class TemplateContentScript extends ContentScript {
 
   async fetchAlanApi(url, token) {
     this.log('fetchAlanApi starts')
+    let urlToCheck = url
     let tokenPayload = window.localStorage.tokenPayload
     let beneficiaryId = tokenPayload
       .split(',')[1]
       .replace(/"/g, '')
       .split(':')[1]
-    if (url.includes('${beneficiaryId}')) {
-      url = url.replace('${beneficiaryId}', beneficiaryId)
+    if (urlToCheck.includes('${beneficiaryId}')) {
+      urlToCheck = urlToCheck.replace('${beneficiaryId}', beneficiaryId)
     }
-    const response = await window.fetch(url, {
+    const response = await window.fetch(urlToCheck, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -488,5 +488,5 @@ connector
     ]
   })
   .catch(err => {
-    console.warn(err)
+    log('warn', err)
   })

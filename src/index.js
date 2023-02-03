@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { ContentScript } from 'cozy-ccc-libs/src/contentscript'
+// import { ContentScript } from 'clisk/contentscript'
 import Minilog from '@cozy/minilog'
 const log = Minilog('ContentScript')
 import { format, subMonths } from 'date-fns'
@@ -24,7 +25,7 @@ window.fetch = function () {
   return constantMock.apply(this, arguments)
 }
 
-const BASE_URL = 'https://alan.com/fr-fr'
+const BASE_URL = 'https://alan.com/'
 const LOGIN_URL = 'https://alan.com/login'
 const HOMEPAGE_URL = 'https://alan.com/app/dashboard'
 const DEFAULT_SOURCE_ACCOUNT_IDENTIFIER = 'alan'
@@ -120,6 +121,8 @@ class TemplateContentScript extends ContentScript {
 
   async authWithoutCredentials() {
     await this.goto(BASE_URL)
+    await this.waitForElementInWorker('.murray__Select__OptionButton')
+    await this.runInWorker('ensureFrenchWebsiteVersion')
     await this.waitForElementInWorker('a[href="/login"]')
     await this.clickAndWait('a[href="/login"]', 'a')
     await this.waitForElementInWorker('a')
@@ -213,6 +216,16 @@ class TemplateContentScript extends ContentScript {
       return true
     } else {
       return false
+    }
+  }
+
+  ensureFrenchWebsiteVersion(){
+    const languageList = document.querySelectorAll('.murray__Select__OptionButton')
+    for (const language of languageList){
+      if (language.textContent.includes('Fran')){
+        language.click()
+        break
+      }
     }
   }
 
@@ -484,7 +497,8 @@ connector
       'getUserDatas',
       'getDocuments',
       'checkAskForLogin',
-      'makeLoginReq'
+      'makeLoginReq',
+      'ensureFrenchWebsiteVersion'
     ]
   })
   .catch(err => {

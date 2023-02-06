@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { ContentScript } from 'cozy-ccc-libs/src/contentscript'
-// import { ContentScript } from 'clisk/contentscript'
+import { ContentScript } from 'cozy-clisk/contentscript'
 import Minilog from '@cozy/minilog'
 const log = Minilog('ContentScript')
 import { format, subMonths } from 'date-fns'

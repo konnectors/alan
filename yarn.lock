@@ -2006,20 +2006,6 @@ cozy-app-publish@0.32.1:
     tar "^6.1.11"
     verror "^1.10.1"
 
-cozy-ccc-libs@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/cozy-ccc-libs/-/cozy-ccc-libs-0.2.0.tgz#f5c8353479f0adb3c8c42dcd0ab49c728fd3db05"
-  integrity sha512-E2EjRM/R+p3/h+DddkWXJDDKi4wKUCwrjiPaVYMnJuHC36xY3HGr5W9Co4hpSN+5GtNixtestTT9xw0xvO3YHg==
-  dependencies:
-    "@cozy/minilog" "^1.0.0"
-    bluebird-retry "^0.11.0"
-    cozy-client "^34.7.1"
-    cozy-client-js "^0.20.0"
-    ky "^0.25.1"
-    lodash "^4.17.21"
-    p-wait-for "^3.0.0"
-    post-me "^0.4.5"
-
 cozy-client-js@^0.20.0:
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/cozy-client-js/-/cozy-client-js-0.20.0.tgz#a507ef9ccbeb340aacd58ca1f1d0cdc9d000e853"
@@ -2030,16 +2016,16 @@ cozy-client-js@^0.20.0:
     pouchdb-browser "7.0.0"
     pouchdb-find "7.0.0"
 
-cozy-client@^34.7.1:
-  version "34.10.0"
-  resolved "https://registry.yarnpkg.com/cozy-client/-/cozy-client-34.10.0.tgz#54f9fbdff0c69f95d11a69abcb55c699b3bb518a"
-  integrity sha512-diaRLGR0iD3DogUiMZc5hDFqKExf/VR+OLy9rrIjBZSUx+g2PASVxCQnCCfv8jiYTwqOadQ6n316k1AX4jj5/w==
+cozy-client@^34.11.0:
+  version "34.11.0"
+  resolved "https://registry.yarnpkg.com/cozy-client/-/cozy-client-34.11.0.tgz#f6877b9eb9080fd1d509cdbcf59473560f282392"
+  integrity sha512-EENMenuECpCe1k8InnoSiI4lpJ20hbfcrBNh5KYTRhHnAzBmrxikzzxEGB5VMzX5bq48Rm94pjpqzNeD0heLEQ==
   dependencies:
     "@cozy/minilog" "1.0.0"
     "@types/jest" "^26.0.20"
     "@types/lodash" "^4.14.170"
     btoa "^1.2.1"
-    cozy-stack-client "^34.7.3"
+    cozy-stack-client "^34.11.0"
     date-fns "2.29.3"
     json-stable-stringify "^1.0.1"
     lodash "^4.17.13"
@@ -2054,6 +2040,20 @@ cozy-client@^34.7.1:
     server-destroy "^1.0.1"
     sift "^6.0.0"
     url-search-params-polyfill "^8.0.0"
+
+cozy-clisk@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/cozy-clisk/-/cozy-clisk-0.4.1.tgz#f1d9afd6a9e97c7f812baba5384fbca65f02c6db"
+  integrity sha512-9pFm2c75trB3LlYcPIZj8jZQvG9/YSCJlLb1WCsrA3h1YYPMtmirO2AG4znD4ZVNITtQ/9vRcV0FxOhSsdcjtA==
+  dependencies:
+    "@cozy/minilog" "^1.0.0"
+    bluebird-retry "^0.11.0"
+    cozy-client "^34.11.0"
+    cozy-client-js "^0.20.0"
+    ky "^0.25.1"
+    lodash "^4.17.21"
+    p-wait-for "^3.0.0"
+    post-me "^0.4.5"
 
 cozy-konnector-build@^1.4.4:
   version "1.4.4"
@@ -2071,10 +2071,10 @@ cozy-konnector-build@^1.4.4:
     webpack "5.68.0"
     webpack-cli "4.9.2"
 
-cozy-stack-client@^34.7.3:
-  version "34.7.3"
-  resolved "https://registry.yarnpkg.com/cozy-stack-client/-/cozy-stack-client-34.7.3.tgz#afe0e1f86bd613c0078f4d783de89f4267849fb7"
-  integrity sha512-cWX3rBihBVk0g2J5nwbrB3hPIwJpTyb+j8KMy/OkGQY6fctQ0RVEKfpRDsSZFNJ3XEcEH8WBt4IjYOSRuZbNHA==
+cozy-stack-client@^34.11.0:
+  version "34.11.0"
+  resolved "https://registry.yarnpkg.com/cozy-stack-client/-/cozy-stack-client-34.11.0.tgz#2c6a6f33b0a935c4d491077d7a4f85e8d2a542b2"
+  integrity sha512-rl6FKFY6r8fhnihBnrsLOS0F0xdvx/2YG6Ok/Yk9OKIsm0GMAn4DIq15xv4XLpHkxSyJLHBX+pZBtdfAFq7wJg==
   dependencies:
     detect-node "^2.0.4"
     mime "^2.4.0"

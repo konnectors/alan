@@ -85,13 +85,26 @@ class TemplateContentScript extends ContentScript {
       fileIdAttributes: ['filename'],
       qualificationLabel: 'health_insurance_card'
     })
-    await this.saveBills(this.store.bills, {
-      context,
-      keys: ['vendorRef', 'beneficiary', 'date'],
-      fileIdAttributes: ['filename'],
-      contentType: 'application/pdf',
-      qualificationLabel: 'health_invoice'
+    // Classify bills by date
+    this.store.bills.sort(function(a,b) {
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
+    const numberOfBills = this.store.bills.length
+    let savedBills = 0
+    this.log(`Found ${numberOfBills} bills`)
+    // Saving bills by block of ten
+    while (this.store.bills.length !== 0){
+      const tenBlock = this.store.bills.splice(0,10)
+      savedBills = savedBills + tenBlock.length
+      await this.saveBills(tenBlock, {
+        context,
+        keys: ['vendorRef', 'beneficiary', 'date'],
+        fileIdAttributes: ['filename'],
+        contentType: 'application/pdf',
+        qualificationLabel: 'health_invoice'
+      })
+      this.log(`bills saved : ${savedBills}/${numberOfBills}`)
+    }
   }
 
   async authWithCredentials(credentials) {

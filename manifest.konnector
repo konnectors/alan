@@ -1,41 +1,27 @@
 {
-  "version": "2.9.0",
+  "version": "1.0.0",
   "name": "Alan",
   "type": "konnector",
   "language": "node",
+  "clientSide": true,
   "icon": "icon.svg",
   "slug": "alan",
+  "cookie_domains": [
+    "https://api.alan.com"
+  ],
   "source": "git://github.com/konnectors/alan.git",
   "editor": "Cozy",
-  "vendor_link": "https://alan.com/login",
+  "vendor_link": "https://alan.com/about/life-at-alan",
   "categories": [
-    "insurance"
+    "health"
   ],
-  "fields": {
-    "login": {
-      "type": "text"
-    },
-    "password": {
-      "type": "password"
-    }
-  },
   "folders": [
     {
       "defaultDir": "$administrative/$konnector/$account"
     }
   ],
-  "time_interval": [
-    0,
-    24
-  ],
-  "data_types": [
-    "bill"
-  ],
-  "screenshots": [],
+  "fields": { },
   "permissions": {
-    "bank operations": {
-      "type": "io.cozy.bank.operations"
-    },
     "carbon_copy": {
       "type": "io.cozy.certified.carbon_copy"
     },
@@ -45,8 +31,8 @@
     "files": {
       "type": "io.cozy.files"
     },
-    "accounts": {
-      "type": "io.cozy.accounts"
+    "identities": {
+      "type": "io.cozy.identities"
     }
   },
   "developer": {
@@ -59,59 +45,42 @@
   ],
   "locales": {
     "fr": {
-      "short_description": "Récupère vos relevés de remboursement Alan et votre carte de mutuelle",
-      "long_description": "<p>Récupère les relévés de remboursement de votre assurance santé complémentaire, pour les adhérents particuliers ou salariés.</p><br><p>Si vous avez connecté le compte bancaire avec lequel vous effectuez vos dépenses de santé, ceci activera le suivi de remboursement dans l'application Cozy Banks.</p><p>Vous devez auparavant vous inscrire sur le service de relevés de santé en ligne sur le site internet d'Alan.</p>",
+      "short_description": "Récupère vos factures Alan",
+      "long_description": "Récupère vos factures Alan sur le site respectif. Une fois votre authentication effectuée, le connecteur va sauvegardée vos factures disponibles.",
       "permissions": {
-        "bank operations": {
-          "description": "Utilisé pour relier les factures à des operations bancaires"
-        },
-        "carboncopy": {
-          "description": "Utilisé pour certifier que vos fichiers sont copie conforme avec les documents d'origine"
-        },
         "bills": {
           "description": "Utilisé pour sauver les données des factures"
         },
         "files": {
           "description": "Utilisé pour sauvegarder les factures"
         },
-        "accounts": {
-          "description": "Utilisé pour obtenir les données du compte"
+        "carboncopy": {
+          "description": "Utilisé pour certifier que vos fichiers sont copie conforme avec les documents d'origine"
         }
       }
     },
     "en": {
-      "short_description": "Fetch your reimbursements",
-      "long_description": "<p>This connector fetches your reimbursement statements for your complementary health insurance.</p><br><p>If you have connected the bank account with which you make your medical expenses, this will enable refund tracking in the Cozy Banks app.</p>",
+      "short_description": "Fetch a list of Alan invoices",
+      "long_description": "Fetch a list of Alan invoices on the respective websites. Once you've been authenticated, the konnector will save your available bills.",
       "permissions": {
-        "bank operations": {
-          "description": "Required to link bank operations to bills"
-        },
-        "carboncopy": {
-          "description": "Required for carbon copy documents"
-        },
         "bills": {
           "description": "Required to save the bills data"
         },
         "files": {
           "description": "Required to save the bills"
         },
-        "accounts": {
-          "description": "Required to get the account's data"
+        "carboncopy": {
+          "description": "Required for carbon copy documents"
         }
       }
     }
   },
-  "banksTransactionRegExp": "\\balan\\b",
   "qualification_labels": [
     "health_invoice"
   ],
   "features": [
-    "LOGIN_OK",
     "METADATA_DEDUP",
-    "HEALTH",
     "CARBON_COPY",
-    "DOC_QUALIFICATION_V2",
-    "SENTRY_V2"
-  ],
-  "manifest_version": "2"
-}
+    "DOC_QUALIFICATION_V2"
+  ]
+} 

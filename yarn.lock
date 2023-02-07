@@ -2055,10 +2055,10 @@ cozy-clisk@^0.4.1:
     p-wait-for "^3.0.0"
     post-me "^0.4.5"
 
-cozy-konnector-build@^1.4.4:
-  version "1.4.4"
-  resolved "https://registry.yarnpkg.com/cozy-konnector-build/-/cozy-konnector-build-1.4.4.tgz#66ffcb56cf31986f155995d7f7a78c8f563ebc91"
-  integrity sha512-4eKheFL6wcFbS4RB4e7O0y+x36I5PEOKFk1yt1uErNl5Y77HZXy5JwP/VZboTnyUDu1YL/7Q1dkrxjE4DpySjg==
+cozy-konnector-build@^1.4.5:
+  version "1.4.5"
+  resolved "https://registry.yarnpkg.com/cozy-konnector-build/-/cozy-konnector-build-1.4.5.tgz#3b46fdadaef5c9447bf2f6e38dd2aba75714b95e"
+  integrity sha512-tME67EBs9kmXZrRXQfjiHfelX87ULuMX19iNvBOzc7cfXCzvXHrezJsxGDJadEWuSPacsvvgU1A1UBlTMRsheg==
   dependencies:
     "@babel/core" "7.17.10"
     babel-preset-cozy-app "^2.0.2"

@@ -1,10 +1,10 @@
 {
-  "name": "template",
+  "name": "alan",
   "version": "1.0.0",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git@github.com:konnectors/template_ccc.git"
+    "url": "git@github.com:konnectors/alan.git"
   },
   "dependencies": {
     "@cozy/minilog": "^1.0.0",

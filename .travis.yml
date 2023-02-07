@@ -29,8 +29,7 @@ deploy:
     - main
 - provider: script
   skip-cleanup: true
-  script: DEPLOY_BRANCH=build yarn deploy && yarn cozyPublish --postpublish mattermost
-    --space cozy_ccc
+  script: DEPLOY_BRANCH=build yarn deploy && yarn cozyPublish --postpublish mattermost --space cozy_ccc
   on:
     tags: true
 before_install:

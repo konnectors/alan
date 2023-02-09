@@ -33,7 +33,7 @@ ssh-keygen -t rsa -b 4096 -f github_deploy_key -N '' -C $url -q 1>/dev/null
 pubkey="$(cat github_deploy_key.pub)"
 
 # add the PUBLIC key to the github repository as a deploy key with write access
-curl https://api.github.com/repos/$owner/$reponame/keys -H "Authorization: token $GITHUB_TOKEN" --data @- << EOF
+curl https://api.github.com/repos/$owner/$reponame/keys -H "Authorization: token $GITHUB_TOKEN" --fail --data @- << EOF
 {
   "title": "travis deploy key",
   "key": "$pubkey",

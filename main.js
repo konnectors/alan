@@ -74,7 +74,8 @@ function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o =
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-var log = (0, _minilog.default)('ContentScript class');
+var _log = (0, _minilog.default)('ContentScript class');
+
 var s = 1000;
 var m = 60 * s;
 var DEFAULT_LOGIN_TIMEOUT = 5 * m;
@@ -143,7 +144,7 @@ var ContentScript = /*#__PURE__*/function () {
 
               case 9:
                 window.onbeforeunload = function () {
-                  return _this.log('window.beforeunload detected with previous url : ' + document.location);
+                  return _this.log('debug', "window.beforeunload detected with previous url : ".concat(document.location));
                 };
 
                 this.bridge.emit('workerReady');
@@ -177,7 +178,8 @@ var ContentScript = /*#__PURE__*/function () {
             switch (_context2.prev = _context2.next) {
               case 0:
                 this.contentScriptType = contentScriptType;
-                log.info("I am the ".concat(contentScriptType));
+
+                _log.info("I am the ".concat(contentScriptType));
 
               case 2:
               case "end":
@@ -320,7 +322,7 @@ var ContentScript = /*#__PURE__*/function () {
      * @param {object} options        - options object
      * @param {string} options.method - name of the method to run
      * @param {number} [options.timeout] - number of miliseconds before the function sends a timeout error. Default Infinity
-     * @param {Array} options.args - array of args to pass to the method
+     * @param {Array} [options.args] - array of args to pass to the method
      * @returns {Promise<boolean>} - true
      * @throws {Error} - if timeout expired
      */
@@ -337,7 +339,9 @@ var ContentScript = /*#__PURE__*/function () {
               case 0:
                 method = _ref.method, _ref$timeout = _ref.timeout, timeout = _ref$timeout === void 0 ? Infinity : _ref$timeout, _ref$args = _ref.args, args = _ref$args === void 0 ? [] : _ref$args;
                 this.onlyIn(PILOT_TYPE, 'runInWorkerUntilTrue');
-                log.debug('runInWorkerUntilTrue', method);
+
+                _log.debug('runInWorkerUntilTrue', method);
+
                 result = false;
                 start = Date.now();
 
@@ -359,13 +363,16 @@ var ContentScript = /*#__PURE__*/function () {
                 throw new Error('Timeout error');
 
               case 9:
-                log.debug('runInWorker call', method);
+                _log.debug('runInWorker call', method);
+
                 _context6.next = 12;
                 return this.runInWorker.apply(this, [method].concat((0, _toConsumableArray2.default)(args)));
 
               case 12:
                 result = _context6.sent;
-                log.debug('runInWorker result', result);
+
+                _log.debug('runInWorker result', result);
+
                 _context6.next = 6;
                 break;
 
@@ -438,7 +445,9 @@ var ContentScript = /*#__PURE__*/function () {
             switch (_context8.prev = _context8.next) {
               case 0:
                 this.onlyIn(WORKER_TYPE, 'waitForElementNoReload');
-                log.debug('waitForElementNoReload', selector);
+
+                _log.debug('waitForElementNoReload', selector);
+
                 _context8.next = 4;
                 return (0, _pWaitFor.default)(function () {
                   return Boolean(document.querySelector(selector));
@@ -508,17 +517,20 @@ var ContentScript = /*#__PURE__*/function () {
             switch (_context10.prev = _context10.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'clickAndWait');
-                log.debug('clicking ' + elementToClick);
+
+                _log.debug('clicking ' + elementToClick);
+
                 _context10.next = 4;
                 return this.runInWorker('click', elementToClick);
 
               case 4:
-                log.debug('waiting for ' + elementToWait);
+                _log.debug('waiting for ' + elementToWait);
+
                 _context10.next = 7;
                 return this.waitForElementInWorker(elementToWait);
 
               case 7:
-                log.debug('done waiting ' + elementToWait);
+                _log.debug('done waiting ' + elementToWait);
 
               case 8:
               case "end":
@@ -598,9 +610,13 @@ var ContentScript = /*#__PURE__*/function () {
             switch (_context12.prev = _context12.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'saveFiles');
-                log.debug(entries, 'saveFiles input entries');
+
+                _log.debug(entries, 'saveFiles input entries');
+
                 context = options.context;
-                log.debug(context, 'saveFiles input context');
+
+                _log.debug(context, 'saveFiles input context');
+
                 filteredEntries = this.filterOutExistingFiles(entries, options);
                 _iterator = _createForOfIteratorHelper(filteredEntries);
                 _context12.prev = 6;
@@ -1076,7 +1092,8 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "createContextFilesIndex",
     value: function createContextFilesIndex(context, fileIdAttributes) {
-      log.debug('getContextFilesIndex', context, fileIdAttributes);
+      _log.debug('getContextFilesIndex', context, fileIdAttributes);
+
       var index = {};
 
       var _iterator2 = _createForOfIteratorHelper(context),
@@ -1113,16 +1130,33 @@ var ContentScript = /*#__PURE__*/function () {
     /**
      * Send log message to the launcher
      *
+     * @param {"debug"|"info"|"warn"|"error"} level: the log level
      * @param {string} message : the log message
-     * @todo Use cozy-logger to add logging level and other features
      */
 
   }, {
     key: "log",
-    value: function log(message) {
+    value: function log(level, message) {
       var _this$bridge2;
 
-      (_this$bridge2 = this.bridge) === null || _this$bridge2 === void 0 ? void 0 : _this$bridge2.emit('log', message);
+      var allowedLevels = ['debug', 'info', 'warn', 'error'];
+
+      if (!message) {
+        _log.warn("you are calling log without message, use log(level,message) instead");
+
+        return;
+      }
+
+      if (!allowedLevels.includes(level)) {
+        level = 'debug';
+      }
+
+      var now = new Date();
+      (_this$bridge2 = this.bridge) === null || _this$bridge2 === void 0 ? void 0 : _this$bridge2.emit('log', {
+        timestamp: now,
+        level: level,
+        msg: message
+      });
     }
     /**
      * @typedef SetWorkerStateOptions
@@ -1396,7 +1430,7 @@ function sendContentScriptReadyEvent() {
       message: 'NEW_WORKER_INITIALIZING'
     }));
   } else {
-    log.error('No window.ReactNativeWebView.postMessage available');
+    _log.error('No window.ReactNativeWebView.postMessage available');
   }
 }
 
@@ -11686,7 +11720,7 @@ var __webpack_exports__ = {};
 (() => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var cozy_clisk_contentscript__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var cozy_clisk_dist_contentscript__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _cozy_minilog__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(73);
 /* harmony import */ var _cozy_minilog__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_cozy_minilog__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(169);
@@ -11724,7 +11758,7 @@ const LOGIN_URL = 'https://alan.com/login'
 const HOMEPAGE_URL = 'https://alan.com/app/dashboard'
 const DEFAULT_SOURCE_ACCOUNT_IDENTIFIER = 'alan'
 
-class TemplateContentScript extends cozy_clisk_contentscript__WEBPACK_IMPORTED_MODULE_0__.ContentScript {
+class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPORTED_MODULE_0__.ContentScript {
   // ////////
   // PILOT //
   // ////////

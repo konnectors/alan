@@ -52,7 +52,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async waitForUserAuthentication() {
-    this.log('waitForUserAuthentication starts')
+    this.log('debug', 'waitForUserAuthentication starts')
     await this.setWorkerState({ visible: true })
     await this.runInWorkerUntilTrue({ method: 'waitForAuthenticated' })
     await this.setWorkerState({ visible: false })
@@ -64,7 +64,7 @@ class TemplateContentScript extends ContentScript {
       ? this.store.userIdentity.email
       : 'UNKNOWN_ERROR'
     if (sourceAccountId === 'UNKNOWN_ERROR') {
-      this.log("Couldn't get a sourceAccountIdentifier, using default")
+      this.log('debug', "Couldn't get a sourceAccountIdentifier, using default")
       return { sourceAccountIdentifier: DEFAULT_SOURCE_ACCOUNT_IDENTIFIER }
     }
     return {
@@ -73,7 +73,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async fetch(context) {
-    this.log('fetch starts')
+    this.log('debug', 'fetch starts')
     await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
@@ -91,7 +91,7 @@ class TemplateContentScript extends ContentScript {
     })
     const numberOfBills = this.store.bills.length
     let savedBills = 0
-    this.log(`Found ${numberOfBills} bills`)
+    this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
     while (this.store.bills.length !== 0){
       const tenBlock = this.store.bills.splice(0,10)
@@ -103,7 +103,7 @@ class TemplateContentScript extends ContentScript {
         contentType: 'application/pdf',
         qualificationLabel: 'health_invoice'
       })
-      this.log(`bills saved : ${savedBills}/${numberOfBills}`)
+      this.log('debug', `bills saved : ${savedBills}/${numberOfBills}`)
     }
   }
 
@@ -161,13 +161,13 @@ class TemplateContentScript extends ContentScript {
   }
 
   async tryAutoLogin(credentials) {
-    this.log('Trying autologin')
+    this.log('info', 'Trying autologin')
     const isSuccess = await this.autoLogin(credentials)
     return isSuccess
   }
 
   async autoLogin(credentials) {
-    this.log('Autologin start')
+    this.log('info', 'Autologin start')
     const selectors = {
       email: 'input[name="email"]',
       password: 'input[name="password"]',
@@ -190,21 +190,21 @@ class TemplateContentScript extends ContentScript {
         loginField,
         passwordField
       )
-      this.log('Sendin userCredentials to Pilot')
+      this.log('debug', 'Sendin userCredentials to Pilot')
       this.sendToPilot({
         userCredentials
       })
     }
     if(document.location.href.includes(`${HOMEPAGE_URL}`) && document.querySelector('a[href="#"]') || document.querySelector('div[class="ListItem ListItem__Clickable ListCareEventItem"]')){
-      this.log('Auth Check succeeded')
+      this.log('info', 'Auth Check succeeded')
       return true
     }
-    this.log('Not respecting condition, returning false')
+    this.log('debug', 'Not respecting condition, returning false')
     return false
   }
 
   async findAndSendCredentials(login, password) {
-    this.log('findAndSendCredentials starts')
+    this.log('debug', 'findAndSendCredentials starts')
     let userLogin = login.value
     let userPassword = password.value
     const userCredentials = {
@@ -371,7 +371,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   computeGroupAmounts(bills) {
-    this.log('Starting computeGroupAmount')
+    this.log('debug', 'Starting computeGroupAmount')
     // find groupAmounts by date
     const groupedBills = groupBy(bills, 'date')
     return bills.map(bill => {
@@ -479,7 +479,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async fetchAlanApi(url, token) {
-    this.log('fetchAlanApi starts')
+    this.log('info', 'fetchAlanApi starts')
     let urlToCheck = url
     let tokenPayload = window.localStorage.tokenPayload
     let beneficiaryId = tokenPayload

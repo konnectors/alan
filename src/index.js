@@ -342,7 +342,7 @@ class TemplateContentScript extends ContentScript {
               vendorRef: bill.id,
               beneficiary: name,
               type: 'health_costs',
-              date: format(new Date(bill.estimated_payment_date), 'yyyy-MM-dd'),
+              date: new Date(bill.estimated_payment_date),
               originalDate,
               subtype: bill.care_acts[0].display_label,
               socialSecurityRefund: bill.care_acts[0].ss_base / 100,

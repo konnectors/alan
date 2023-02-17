@@ -11781,7 +11781,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   async waitForUserAuthentication() {
-    this.log('debug', 'waitForUserAuthentication starts')
+    this.log('waitForUserAuthentication starts')
     await this.setWorkerState({ visible: true })
     await this.runInWorkerUntilTrue({ method: 'waitForAuthenticated' })
     await this.setWorkerState({ visible: false })
@@ -11793,7 +11793,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       ? this.store.userIdentity.email
       : 'UNKNOWN_ERROR'
     if (sourceAccountId === 'UNKNOWN_ERROR') {
-      this.log('debug', "Couldn't get a sourceAccountIdentifier, using default")
+      this.log("Couldn't get a sourceAccountIdentifier, using default")
       return { sourceAccountIdentifier: DEFAULT_SOURCE_ACCOUNT_IDENTIFIER }
     }
     return {
@@ -11802,7 +11802,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   async fetch(context) {
-    this.log('debug', 'fetch starts')
+    this.log('fetch starts')
     await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
@@ -11820,7 +11820,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     })
     const numberOfBills = this.store.bills.length
     let savedBills = 0
-    this.log('debug', `Found ${numberOfBills} bills`)
+    this.log(`Found ${numberOfBills} bills`)
     // Saving bills by block of ten
     while (this.store.bills.length !== 0){
       const tenBlock = this.store.bills.splice(0,10)
@@ -11832,7 +11832,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
         contentType: 'application/pdf',
         qualificationLabel: 'health_invoice'
       })
-      this.log('debug', `bills saved : ${savedBills}/${numberOfBills}`)
+      this.log(`bills saved : ${savedBills}/${numberOfBills}`)
     }
   }
 
@@ -11890,13 +11890,13 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   async tryAutoLogin(credentials) {
-    this.log('info', 'Trying autologin')
+    this.log('Trying autologin')
     const isSuccess = await this.autoLogin(credentials)
     return isSuccess
   }
 
   async autoLogin(credentials) {
-    this.log('info', 'Autologin start')
+    this.log('Autologin start')
     const selectors = {
       email: 'input[name="email"]',
       password: 'input[name="password"]',
@@ -11919,21 +11919,21 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
         loginField,
         passwordField
       )
-      this.log('debug', 'Sendin userCredentials to Pilot')
+      this.log('Sendin userCredentials to Pilot')
       this.sendToPilot({
         userCredentials
       })
     }
     if(document.location.href.includes(`${HOMEPAGE_URL}`) && document.querySelector('a[href="#"]') || document.querySelector('div[class="ListItem ListItem__Clickable ListCareEventItem"]')){
-      this.log('info', 'Auth Check succeeded')
+      this.log('Auth Check succeeded')
       return true
     }
-    this.log('debug', 'Not respecting condition, returning false')
+    this.log('Not respecting condition, returning false')
     return false
   }
 
   async findAndSendCredentials(login, password) {
-    this.log('debug', 'findAndSendCredentials starts')
+    this.log('findAndSendCredentials starts')
     let userLogin = login.value
     let userPassword = password.value
     const userCredentials = {
@@ -12100,7 +12100,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   computeGroupAmounts(bills) {
-    this.log('debug', 'Starting computeGroupAmount')
+    this.log('Starting computeGroupAmount')
     // find groupAmounts by date
     const groupedBills = lodash_groupBy__WEBPACK_IMPORTED_MODULE_2___default()(bills, 'date')
     return bills.map(bill => {
@@ -12208,7 +12208,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   async fetchAlanApi(url, token) {
-    this.log('info', 'fetchAlanApi starts')
+    this.log('fetchAlanApi starts')
     let urlToCheck = url
     let tokenPayload = window.localStorage.tokenPayload
     let beneficiaryId = tokenPayload

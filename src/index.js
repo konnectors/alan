@@ -79,6 +79,9 @@ class TemplateContentScript extends ContentScript {
       this.store.userDatas,
       this.store.token
     )
+    if(this.store.userCredentials){
+      await this.saveCredentials(this.store.userCredentials)
+    }
     await this.saveFiles(this.store.tpCard, {
       context,
       contentType: 'application/pdf',
@@ -147,7 +150,6 @@ class TemplateContentScript extends ContentScript {
       )
     }
     await this.waitForUserAuthentication()
-    await this.saveCredentials(this.store.userCredentials)
     const isAskingForDownloadAgain = await this.runInWorker(
       'checkAskForAppDownload'
     )

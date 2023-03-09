@@ -73,15 +73,15 @@ class TemplateContentScript extends ContentScript {
   }
 
   async fetch(context) {
-    this.log('debug', 'fetch starts')
+    this.log('fetch starts')
+    if(this.store.userCredentials){
+      await this.saveCredentials(this.store.userCredentials)
+    }
     await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
       this.store.token
     )
-    if(this.store.userCredentials){
-      await this.saveCredentials(this.store.userCredentials)
-    }
     await this.saveFiles(this.store.tpCard, {
       context,
       contentType: 'application/pdf',

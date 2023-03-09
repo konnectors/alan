@@ -73,7 +73,10 @@ class TemplateContentScript extends ContentScript {
   }
 
   async fetch(context) {
-    this.log('debug', 'fetch starts')
+    this.log('fetch starts')
+    if(this.store.userCredentials){
+      await this.saveCredentials(this.store.userCredentials)
+    }
     await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
@@ -147,7 +150,6 @@ class TemplateContentScript extends ContentScript {
       )
     }
     await this.waitForUserAuthentication()
-    await this.saveCredentials(this.store.userCredentials)
     const isAskingForDownloadAgain = await this.runInWorker(
       'checkAskForAppDownload'
     )

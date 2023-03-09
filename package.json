@@ -1,15 +1,15 @@
 {
   "name": "alan",
-  "version": "1.4.0",
-  "license": "MIT",
+  "version": "2.3.0",
+  "license": "AGPL-3.0",
   "repository": {
     "type": "git",
     "url": "git@github.com:konnectors/alan.git"
   },
   "dependencies": {
-    "@cozy/minilog": "1.0.0",
-    "cozy-clisk": "^0.7.0",
-    "date-fns": "2.21.1"
+    "@cozy/minilog": "^1.0.0",
+    "cozy-clisk": "^0.8.0",
+    "date-fns": "^2.21.1"
   },
   "eslintConfig": {
     "extends": [

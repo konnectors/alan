@@ -56,24 +56,17 @@ var _classCallCheck2 = _interopRequireDefault(__webpack_require__(14));
 
 var _createClass2 = _interopRequireDefault(__webpack_require__(15));
 
-var _get = _interopRequireDefault(__webpack_require__(18));
+var _pWaitFor = _interopRequireDefault(__webpack_require__(18));
 
-var _pWaitFor = _interopRequireDefault(__webpack_require__(70));
+var _minilog = _interopRequireDefault(__webpack_require__(21));
 
-var _minilog = _interopRequireDefault(__webpack_require__(73));
+var _LauncherBridge = _interopRequireDefault(__webpack_require__(33));
 
-var _LauncherBridge = _interopRequireDefault(__webpack_require__(85));
+var _utils = __webpack_require__(42);
 
-var _utils = __webpack_require__(94);
+var _umd = _interopRequireDefault(__webpack_require__(43));
 
-var _umd = _interopRequireDefault(__webpack_require__(95));
-
-function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
+// @ts-check
 var _log = (0, _minilog.default)('ContentScript class');
 
 var s = 1000;
@@ -100,7 +93,7 @@ var ContentScript = /*#__PURE__*/function () {
      *
      * @param {object} options : options object
      * @param {Array<string>} [options.additionalExposedMethodsNames] : list of additional method of the
-     * content script to expose expose. To make it callable via the worker
+     * content script to expose. To make it callable via the worker.
      */
     function () {
       var _init = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee() {
@@ -122,7 +115,7 @@ var ContentScript = /*#__PURE__*/function () {
                 this.bridge = new _LauncherBridge.default({
                   localWindow: window
                 });
-                exposedMethodsNames = ['setContentScriptType', 'ensureAuthenticated', 'checkAuthenticated', 'waitForAuthenticated', 'waitForElementNoReload', 'getUserDataFromWebsite', 'fetch', 'click', 'fillText', 'storeFromWorker', 'clickAndWait', 'getCookiesByDomain', 'getCookieByDomainAndName'];
+                exposedMethodsNames = ['setContentScriptType', 'ensureAuthenticated', 'checkAuthenticated', 'waitForAuthenticated', 'waitForElementNoReload', 'getUserDataFromWebsite', 'fetch', 'click', 'fillText', 'storeFromWorker', 'clickAndWait', 'getCookiesByDomain', 'getCookieByDomainAndName', 'downloadFileInWorker'];
 
                 if (options.additionalExposedMethodsNames) {
                   exposedMethodsNames.push.apply(exposedMethodsNames, options.additionalExposedMethodsNames);
@@ -590,6 +583,56 @@ var ContentScript = /*#__PURE__*/function () {
       return fillText;
     }()
     /**
+     * Download the file send by the launcher in the worker context
+     *
+     * @param {object} entry The entry to download with fileurl attribute
+     */
+
+  }, {
+    key: "downloadFileInWorker",
+    value: function () {
+      var _downloadFileInWorker = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee12(entry) {
+        return _regenerator.default.wrap(function _callee12$(_context12) {
+          while (1) {
+            switch (_context12.prev = _context12.next) {
+              case 0:
+                this.onlyIn(WORKER_TYPE, 'downloadFileInWorker');
+                this.log('info', 'downloading file in worker');
+
+                if (!entry.fileurl) {
+                  _context12.next = 9;
+                  break;
+                }
+
+                _context12.next = 5;
+                return _umd.default.get(entry.fileurl, entry.requestOptions).blob();
+
+              case 5:
+                entry.blob = _context12.sent;
+                _context12.next = 8;
+                return (0, _utils.blobToBase64)(entry.blob);
+
+              case 8:
+                entry.dataUri = _context12.sent;
+
+              case 9:
+                return _context12.abrupt("return", entry.dataUri);
+
+              case 10:
+              case "end":
+                return _context12.stop();
+            }
+          }
+        }, _callee12, this);
+      }));
+
+      function downloadFileInWorker(_x11) {
+        return _downloadFileInWorker.apply(this, arguments);
+      }
+
+      return downloadFileInWorker;
+    }()
+    /**
      * Bridge to the saveFiles method from the launcher.
      * - it prefilters files according to the context comming from the launcher
      * - download files when not filtered out
@@ -602,12 +645,11 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "saveFiles",
     value: function () {
-      var _saveFiles = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee12(entries, options) {
-        var context, filteredEntries, _iterator, _step, entry;
-
-        return _regenerator.default.wrap(function _callee12$(_context12) {
+      var _saveFiles = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee13(entries, options) {
+        var context;
+        return _regenerator.default.wrap(function _callee13$(_context13) {
           while (1) {
-            switch (_context12.prev = _context12.next) {
+            switch (_context13.prev = _context13.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'saveFiles');
 
@@ -617,90 +659,29 @@ var ContentScript = /*#__PURE__*/function () {
 
                 _log.debug(context, 'saveFiles input context');
 
-                filteredEntries = this.filterOutExistingFiles(entries, options);
-                _iterator = _createForOfIteratorHelper(filteredEntries);
-                _context12.prev = 6;
-
-                _iterator.s();
-
-              case 8:
-                if ((_step = _iterator.n()).done) {
-                  _context12.next = 22;
-                  break;
-                }
-
-                entry = _step.value;
-
-                if (!entry.fileurl) {
-                  _context12.next = 15;
-                  break;
-                }
-
-                _context12.next = 13;
-                return _umd.default.get(entry.fileurl, entry.requestOptions).blob();
-
-              case 13:
-                entry.blob = _context12.sent;
-                delete entry.fileurl;
-
-              case 15:
-                if (!entry.blob) {
-                  _context12.next = 20;
-                  break;
-                }
-
-                _context12.next = 18;
-                return (0, _utils.blobToBase64)(entry.blob);
-
-              case 18:
-                entry.dataUri = _context12.sent;
-                delete entry.blob;
-
-              case 20:
-                _context12.next = 8;
-                break;
-
-              case 22:
-                _context12.next = 27;
-                break;
-
-              case 24:
-                _context12.prev = 24;
-                _context12.t0 = _context12["catch"](6);
-
-                _iterator.e(_context12.t0);
-
-              case 27:
-                _context12.prev = 27;
-
-                _iterator.f();
-
-                return _context12.finish(27);
-
-              case 30:
                 if (this.bridge) {
-                  _context12.next = 32;
+                  _context13.next = 6;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
-              case 32:
-                _context12.next = 34;
+              case 6:
+                _context13.next = 8;
                 return this.bridge.call('saveFiles', entries, options);
 
-              case 34:
-                return _context12.abrupt("return", _context12.sent);
+              case 8:
+                return _context13.abrupt("return", _context13.sent);
 
-              case 35:
+              case 9:
               case "end":
-                return _context12.stop();
+                return _context13.stop();
             }
           }
-        }, _callee12, this, [[6, 24, 27, 30]]);
+        }, _callee13, this);
       }));
 
-      function saveFiles(_x11, _x12) {
+      function saveFiles(_x12, _x13) {
         return _saveFiles.apply(this, arguments);
       }
 
@@ -718,42 +699,42 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "saveBills",
     value: function () {
-      var _saveBills = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee13(entries, options) {
+      var _saveBills = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee14(entries, options) {
         var files;
-        return _regenerator.default.wrap(function _callee13$(_context13) {
+        return _regenerator.default.wrap(function _callee14$(_context14) {
           while (1) {
-            switch (_context13.prev = _context13.next) {
+            switch (_context14.prev = _context14.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'saveBills');
-                _context13.next = 3;
+                _context14.next = 3;
                 return this.saveFiles(entries, options);
 
               case 3:
-                files = _context13.sent;
+                files = _context14.sent;
 
                 if (this.bridge) {
-                  _context13.next = 6;
+                  _context14.next = 6;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 6:
-                _context13.next = 8;
+                _context14.next = 8;
                 return this.bridge.call('saveBills', files, options);
 
               case 8:
-                return _context13.abrupt("return", _context13.sent);
+                return _context14.abrupt("return", _context14.sent);
 
               case 9:
               case "end":
-                return _context13.stop();
+                return _context14.stop();
             }
           }
-        }, _callee13, this);
+        }, _callee14, this);
       }));
 
-      function saveBills(_x13, _x14) {
+      function saveBills(_x14, _x15) {
         return _saveBills.apply(this, arguments);
       }
 
@@ -766,33 +747,33 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "getCredentials",
     value: function () {
-      var _getCredentials = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee14() {
-        return _regenerator.default.wrap(function _callee14$(_context14) {
+      var _getCredentials = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee15() {
+        return _regenerator.default.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context14.prev = _context14.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'getCredentials');
 
                 if (this.bridge) {
-                  _context14.next = 3;
+                  _context15.next = 3;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 3:
-                _context14.next = 5;
+                _context15.next = 5;
                 return this.bridge.call('getCredentials');
 
               case 5:
-                return _context14.abrupt("return", _context14.sent);
+                return _context15.abrupt("return", _context15.sent);
 
               case 6:
               case "end":
-                return _context14.stop();
+                return _context15.stop();
             }
           }
-        }, _callee14, this);
+        }, _callee15, this);
       }));
 
       function getCredentials() {
@@ -810,36 +791,36 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "saveCredentials",
     value: function () {
-      var _saveCredentials = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee15(credentials) {
-        return _regenerator.default.wrap(function _callee15$(_context15) {
+      var _saveCredentials = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee16(credentials) {
+        return _regenerator.default.wrap(function _callee16$(_context16) {
           while (1) {
-            switch (_context15.prev = _context15.next) {
+            switch (_context16.prev = _context16.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'saveCredentials');
 
                 if (this.bridge) {
-                  _context15.next = 3;
+                  _context16.next = 3;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 3:
-                _context15.next = 5;
+                _context16.next = 5;
                 return this.bridge.call('saveCredentials', credentials);
 
               case 5:
-                return _context15.abrupt("return", _context15.sent);
+                return _context16.abrupt("return", _context16.sent);
 
               case 6:
               case "end":
-                return _context15.stop();
+                return _context16.stop();
             }
           }
-        }, _callee15, this);
+        }, _callee16, this);
       }));
 
-      function saveCredentials(_x15) {
+      function saveCredentials(_x16) {
         return _saveCredentials.apply(this, arguments);
       }
 
@@ -854,36 +835,36 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "saveIdentity",
     value: function () {
-      var _saveIdentity = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee16(identity) {
-        return _regenerator.default.wrap(function _callee16$(_context16) {
+      var _saveIdentity = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee17(identity) {
+        return _regenerator.default.wrap(function _callee17$(_context17) {
           while (1) {
-            switch (_context16.prev = _context16.next) {
+            switch (_context17.prev = _context17.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'saveIdentity');
 
                 if (this.bridge) {
-                  _context16.next = 3;
+                  _context17.next = 3;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 3:
-                _context16.next = 5;
+                _context17.next = 5;
                 return this.bridge.call('saveIdentity', identity);
 
               case 5:
-                return _context16.abrupt("return", _context16.sent);
+                return _context17.abrupt("return", _context17.sent);
 
               case 6:
               case "end":
-                return _context16.stop();
+                return _context17.stop();
             }
           }
-        }, _callee16, this);
+        }, _callee17, this);
       }));
 
-      function saveIdentity(_x16) {
+      function saveIdentity(_x17) {
         return _saveIdentity.apply(this, arguments);
       }
 
@@ -898,34 +879,34 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "getCookiesByDomain",
     value: function () {
-      var _getCookiesByDomain = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee17(domain) {
-        return _regenerator.default.wrap(function _callee17$(_context17) {
+      var _getCookiesByDomain = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee18(domain) {
+        return _regenerator.default.wrap(function _callee18$(_context18) {
           while (1) {
-            switch (_context17.prev = _context17.next) {
+            switch (_context18.prev = _context18.next) {
               case 0:
                 if (this.bridge) {
-                  _context17.next = 2;
+                  _context18.next = 2;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 2:
-                _context17.next = 4;
+                _context18.next = 4;
                 return this.bridge.call('getCookiesByDomain', domain);
 
               case 4:
-                return _context17.abrupt("return", _context17.sent);
+                return _context18.abrupt("return", _context18.sent);
 
               case 5:
               case "end":
-                return _context17.stop();
+                return _context18.stop();
             }
           }
-        }, _callee17, this);
+        }, _callee18, this);
       }));
 
-      function getCookiesByDomain(_x17) {
+      function getCookiesByDomain(_x18) {
         return _getCookiesByDomain.apply(this, arguments);
       }
 
@@ -940,34 +921,34 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "getCookieFromKeychainByName",
     value: function () {
-      var _getCookieFromKeychainByName = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee18(cookieName) {
-        return _regenerator.default.wrap(function _callee18$(_context18) {
+      var _getCookieFromKeychainByName = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee19(cookieName) {
+        return _regenerator.default.wrap(function _callee19$(_context19) {
           while (1) {
-            switch (_context18.prev = _context18.next) {
+            switch (_context19.prev = _context19.next) {
               case 0:
                 if (this.bridge) {
-                  _context18.next = 2;
+                  _context19.next = 2;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 2:
-                _context18.next = 4;
+                _context19.next = 4;
                 return this.bridge.call('getCookieFromKeychainByName', cookieName);
 
               case 4:
-                return _context18.abrupt("return", _context18.sent);
+                return _context19.abrupt("return", _context19.sent);
 
               case 5:
               case "end":
-                return _context18.stop();
+                return _context19.stop();
             }
           }
-        }, _callee18, this);
+        }, _callee19, this);
       }));
 
-      function getCookieFromKeychainByName(_x18) {
+      function getCookieFromKeychainByName(_x19) {
         return _getCookieFromKeychainByName.apply(this, arguments);
       }
 
@@ -982,51 +963,12 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "saveCookieToKeychain",
     value: function () {
-      var _saveCookieToKeychain = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee19(cookieValue) {
-        return _regenerator.default.wrap(function _callee19$(_context19) {
-          while (1) {
-            switch (_context19.prev = _context19.next) {
-              case 0:
-                this.onlyIn(PILOT_TYPE, 'saveCookieToKeychain');
-
-                if (this.bridge) {
-                  _context19.next = 3;
-                  break;
-                }
-
-                throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
-
-              case 3:
-                _context19.next = 5;
-                return this.bridge.call('saveCookieToKeychain', cookieValue);
-
-              case 5:
-                return _context19.abrupt("return", _context19.sent);
-
-              case 6:
-              case "end":
-                return _context19.stop();
-            }
-          }
-        }, _callee19, this);
-      }));
-
-      function saveCookieToKeychain(_x19) {
-        return _saveCookieToKeychain.apply(this, arguments);
-      }
-
-      return saveCookieToKeychain;
-    }()
-  }, {
-    key: "getCookieByDomainAndName",
-    value: function () {
-      var _getCookieByDomainAndName = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee20(cookieDomain, cookieName) {
-        var expectedCookie;
+      var _saveCookieToKeychain = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee20(cookieValue) {
         return _regenerator.default.wrap(function _callee20$(_context20) {
           while (1) {
             switch (_context20.prev = _context20.next) {
               case 0:
-                this.onlyIn(WORKER_TYPE, 'getCookieByDomainAndName');
+                this.onlyIn(PILOT_TYPE, 'saveCookieToKeychain');
 
                 if (this.bridge) {
                   _context20.next = 3;
@@ -1037,13 +979,12 @@ var ContentScript = /*#__PURE__*/function () {
 
               case 3:
                 _context20.next = 5;
-                return this.bridge.call('getCookieByDomainAndName', cookieDomain, cookieName);
+                return this.bridge.call('saveCookieToKeychain', cookieValue);
 
               case 5:
-                expectedCookie = _context20.sent;
-                return _context20.abrupt("return", expectedCookie);
+                return _context20.abrupt("return", _context20.sent);
 
-              case 7:
+              case 6:
               case "end":
                 return _context20.stop();
             }
@@ -1051,86 +992,56 @@ var ContentScript = /*#__PURE__*/function () {
         }, _callee20, this);
       }));
 
-      function getCookieByDomainAndName(_x20, _x21) {
+      function saveCookieToKeychain(_x20) {
+        return _saveCookieToKeychain.apply(this, arguments);
+      }
+
+      return saveCookieToKeychain;
+    }()
+  }, {
+    key: "getCookieByDomainAndName",
+    value: function () {
+      var _getCookieByDomainAndName = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee21(cookieDomain, cookieName) {
+        var expectedCookie;
+        return _regenerator.default.wrap(function _callee21$(_context21) {
+          while (1) {
+            switch (_context21.prev = _context21.next) {
+              case 0:
+                this.onlyIn(WORKER_TYPE, 'getCookieByDomainAndName');
+
+                if (this.bridge) {
+                  _context21.next = 3;
+                  break;
+                }
+
+                throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
+
+              case 3:
+                _context21.next = 5;
+                return this.bridge.call('getCookieByDomainAndName', cookieDomain, cookieName);
+
+              case 5:
+                expectedCookie = _context21.sent;
+                return _context21.abrupt("return", expectedCookie);
+
+              case 7:
+              case "end":
+                return _context21.stop();
+            }
+          }
+        }, _callee21, this);
+      }));
+
+      function getCookieByDomainAndName(_x21, _x22) {
         return _getCookieByDomainAndName.apply(this, arguments);
       }
 
       return getCookieByDomainAndName;
     }()
     /**
-     * Do not download files which already exist
-     *
-     * @param {Array} files : array of file objects
-     * @param {object} options : options object
-     * @param {Array.<string>} options.fileIdAttributes : list of attributes defining the unicity of the file
-     * @param {object} options.context : current launcher context
-     * @returns {Array} : filtered array of file objects
-     */
-
-  }, {
-    key: "filterOutExistingFiles",
-    value: function filterOutExistingFiles(files, options) {
-      var _this2 = this;
-
-      if (options.fileIdAttributes) {
-        var contextFilesIndex = this.createContextFilesIndex(options.context, options.fileIdAttributes);
-        return files.filter(function (file) {
-          return contextFilesIndex[_this2.calculateFileKey(file, options.fileIdAttributes)] === undefined;
-        });
-      } else {
-        return files;
-      }
-    }
-    /**
-     * Creates an index of files, indexed by uniq id defined by fileIdAttributes
-     *
-     * @param {object} context : current context object
-     * @param {Array.<string>} fileIdAttributes : list of attributes defining the unicity of a file
-     * @returns {object} : context file index
-     */
-
-  }, {
-    key: "createContextFilesIndex",
-    value: function createContextFilesIndex(context, fileIdAttributes) {
-      _log.debug('getContextFilesIndex', context, fileIdAttributes);
-
-      var index = {};
-
-      var _iterator2 = _createForOfIteratorHelper(context),
-          _step2;
-
-      try {
-        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-          var entry = _step2.value;
-          index[entry.metadata.fileIdAttributes] = entry;
-        }
-      } catch (err) {
-        _iterator2.e(err);
-      } finally {
-        _iterator2.f();
-      }
-
-      return index;
-    }
-    /**
-     * Calculates the key defining the uniqueness of a given file
-     *
-     * @param {object} file : file object
-     * @param {Array.<string>} fileIdAttributes : list of attributes defining the unicity of a file
-     * @returns {string} : file key
-     */
-
-  }, {
-    key: "calculateFileKey",
-    value: function calculateFileKey(file, fileIdAttributes) {
-      return fileIdAttributes.sort().map(function (key) {
-        return (0, _get.default)(file, key);
-      }).join('####');
-    }
-    /**
      * Send log message to the launcher
      *
-     * @param {"debug"|"info"|"warn"|"error"} level: the log level
+     * @param {"debug"|"info"|"warn"|"error"} level : the log level
      * @param {string} message : the log message
      */
 
@@ -1173,33 +1084,33 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "setWorkerState",
     value: function () {
-      var _setWorkerState = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee21() {
+      var _setWorkerState = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee22() {
         var options,
-            _args21 = arguments;
-        return _regenerator.default.wrap(function _callee21$(_context21) {
+            _args22 = arguments;
+        return _regenerator.default.wrap(function _callee22$(_context22) {
           while (1) {
-            switch (_context21.prev = _context21.next) {
+            switch (_context22.prev = _context22.next) {
               case 0:
-                options = _args21.length > 0 && _args21[0] !== undefined ? _args21[0] : {};
+                options = _args22.length > 0 && _args22[0] !== undefined ? _args22[0] : {};
                 this.onlyIn(PILOT_TYPE, 'setWorkerState');
 
                 if (this.bridge) {
-                  _context21.next = 4;
+                  _context22.next = 4;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 4:
-                _context21.next = 6;
+                _context22.next = 6;
                 return this.bridge.call('setWorkerState', options);
 
               case 6:
               case "end":
-                return _context21.stop();
+                return _context22.stop();
             }
           }
-        }, _callee21, this);
+        }, _callee22, this);
       }));
 
       function setWorkerState() {
@@ -1217,26 +1128,26 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "goto",
     value: function () {
-      var _goto = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee22(url) {
-        return _regenerator.default.wrap(function _callee22$(_context22) {
+      var _goto = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee23(url) {
+        return _regenerator.default.wrap(function _callee23$(_context23) {
           while (1) {
-            switch (_context22.prev = _context22.next) {
+            switch (_context23.prev = _context23.next) {
               case 0:
                 this.onlyIn(PILOT_TYPE, 'goto');
-                _context22.next = 3;
+                _context23.next = 3;
                 return this.setWorkerState({
                   url: url
                 });
 
               case 3:
               case "end":
-                return _context22.stop();
+                return _context23.stop();
             }
           }
-        }, _callee22, this);
+        }, _callee23, this);
       }));
 
-      function goto(_x22) {
+      function goto(_x23) {
         return _goto.apply(this, arguments);
       }
 
@@ -1254,19 +1165,19 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "ensureAuthenticated",
     value: function () {
-      var _ensureAuthenticated = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee23() {
-        return _regenerator.default.wrap(function _callee23$(_context23) {
+      var _ensureAuthenticated = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee24() {
+        return _regenerator.default.wrap(function _callee24$(_context24) {
           while (1) {
-            switch (_context23.prev = _context23.next) {
+            switch (_context24.prev = _context24.next) {
               case 0:
-                return _context23.abrupt("return", true);
+                return _context24.abrupt("return", true);
 
               case 1:
               case "end":
-                return _context23.stop();
+                return _context24.stop();
             }
           }
-        }, _callee23);
+        }, _callee24);
       }));
 
       function ensureAuthenticated() {
@@ -1285,16 +1196,16 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "getUserDataFromWebsite",
     value: function () {
-      var _getUserDataFromWebsite = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee24() {
-        return _regenerator.default.wrap(function _callee24$(_context24) {
+      var _getUserDataFromWebsite = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee25() {
+        return _regenerator.default.wrap(function _callee25$(_context25) {
           while (1) {
-            switch (_context24.prev = _context24.next) {
+            switch (_context25.prev = _context25.next) {
               case 0:
               case "end":
-                return _context24.stop();
+                return _context25.stop();
             }
           }
-        }, _callee24);
+        }, _callee25);
       }));
 
       function getUserDataFromWebsite() {
@@ -1312,32 +1223,32 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "sendToPilot",
     value: function () {
-      var _sendToPilot = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee25(obj) {
-        return _regenerator.default.wrap(function _callee25$(_context25) {
+      var _sendToPilot = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee26(obj) {
+        return _regenerator.default.wrap(function _callee26$(_context26) {
           while (1) {
-            switch (_context25.prev = _context25.next) {
+            switch (_context26.prev = _context26.next) {
               case 0:
                 this.onlyIn(WORKER_TYPE, 'sendToPilot');
 
                 if (this.bridge) {
-                  _context25.next = 3;
+                  _context26.next = 3;
                   break;
                 }
 
                 throw new Error('No bridge is defined, you should call ContentScript.init before using this method');
 
               case 3:
-                return _context25.abrupt("return", this.bridge.call('sendToPilot', obj));
+                return _context26.abrupt("return", this.bridge.call('sendToPilot', obj));
 
               case 4:
               case "end":
-                return _context25.stop();
+                return _context26.stop();
             }
           }
-        }, _callee25, this);
+        }, _callee26, this);
       }));
 
-      function sendToPilot(_x23) {
+      function sendToPilot(_x24) {
         return _sendToPilot.apply(this, arguments);
       }
 
@@ -1352,23 +1263,23 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "storeFromWorker",
     value: function () {
-      var _storeFromWorker = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee26(obj) {
-        return _regenerator.default.wrap(function _callee26$(_context26) {
+      var _storeFromWorker = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee27(obj) {
+        return _regenerator.default.wrap(function _callee27$(_context27) {
           while (1) {
-            switch (_context26.prev = _context26.next) {
+            switch (_context27.prev = _context27.next) {
               case 0:
                 // @ts-ignore Aucune surcharge ne correspond à cet appel.
                 Object.assign(this.store, obj);
 
               case 1:
               case "end":
-                return _context26.stop();
+                return _context27.stop();
             }
           }
-        }, _callee26, this);
+        }, _callee27, this);
       }));
 
-      function storeFromWorker(_x24) {
+      function storeFromWorker(_x25) {
         return _storeFromWorker.apply(this, arguments);
       }
 
@@ -1394,19 +1305,19 @@ var ContentScript = /*#__PURE__*/function () {
   }, {
     key: "fetch",
     value: function () {
-      var _fetch = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee27(options) {
-        return _regenerator.default.wrap(function _callee27$(_context27) {
+      var _fetch = (0, _asyncToGenerator2.default)( /*#__PURE__*/_regenerator.default.mark(function _callee28(options) {
+        return _regenerator.default.wrap(function _callee28$(_context28) {
           while (1) {
-            switch (_context27.prev = _context27.next) {
+            switch (_context28.prev = _context28.next) {
               case 0:
               case "end":
-                return _context27.stop();
+                return _context28.stop();
             }
           }
-        }, _callee27);
+        }, _callee28);
       }));
 
-      function fetch(_x25) {
+      function fetch(_x26) {
         return _fetch.apply(this, arguments);
       }
 
@@ -1950,1567 +1861,9 @@ module.exports = _toPrimitive, module.exports.__esModule = true, module.exports[
 /* 18 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseGet = __webpack_require__(19);
-
-/**
- * Gets the value at `path` of `object`. If the resolved value is
- * `undefined`, the `defaultValue` is returned in its place.
- *
- * @static
- * @memberOf _
- * @since 3.7.0
- * @category Object
- * @param {Object} object The object to query.
- * @param {Array|string} path The path of the property to get.
- * @param {*} [defaultValue] The value returned for `undefined` resolved values.
- * @returns {*} Returns the resolved value.
- * @example
- *
- * var object = { 'a': [{ 'b': { 'c': 3 } }] };
- *
- * _.get(object, 'a[0].b.c');
- * // => 3
- *
- * _.get(object, ['a', '0', 'b', 'c']);
- * // => 3
- *
- * _.get(object, 'a.b.c', 'default');
- * // => 'default'
- */
-function get(object, path, defaultValue) {
-  var result = object == null ? undefined : baseGet(object, path);
-  return result === undefined ? defaultValue : result;
-}
-
-module.exports = get;
-
-
-/***/ }),
-/* 19 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var castPath = __webpack_require__(20),
-    toKey = __webpack_require__(69);
-
-/**
- * The base implementation of `_.get` without support for default values.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {Array|string} path The path of the property to get.
- * @returns {*} Returns the resolved value.
- */
-function baseGet(object, path) {
-  path = castPath(path, object);
-
-  var index = 0,
-      length = path.length;
-
-  while (object != null && index < length) {
-    object = object[toKey(path[index++])];
-  }
-  return (index && index == length) ? object : undefined;
-}
-
-module.exports = baseGet;
-
-
-/***/ }),
-/* 20 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isArray = __webpack_require__(21),
-    isKey = __webpack_require__(22),
-    stringToPath = __webpack_require__(31),
-    toString = __webpack_require__(66);
-
-/**
- * Casts `value` to a path array if it's not one.
- *
- * @private
- * @param {*} value The value to inspect.
- * @param {Object} [object] The object to query keys on.
- * @returns {Array} Returns the cast property path array.
- */
-function castPath(value, object) {
-  if (isArray(value)) {
-    return value;
-  }
-  return isKey(value, object) ? [value] : stringToPath(toString(value));
-}
-
-module.exports = castPath;
-
-
-/***/ }),
-/* 21 */
-/***/ ((module) => {
-
-/**
- * Checks if `value` is classified as an `Array` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an array, else `false`.
- * @example
- *
- * _.isArray([1, 2, 3]);
- * // => true
- *
- * _.isArray(document.body.children);
- * // => false
- *
- * _.isArray('abc');
- * // => false
- *
- * _.isArray(_.noop);
- * // => false
- */
-var isArray = Array.isArray;
-
-module.exports = isArray;
-
-
-/***/ }),
-/* 22 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isArray = __webpack_require__(21),
-    isSymbol = __webpack_require__(23);
-
-/** Used to match property names within property paths. */
-var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/,
-    reIsPlainProp = /^\w*$/;
-
-/**
- * Checks if `value` is a property name and not a property path.
- *
- * @private
- * @param {*} value The value to check.
- * @param {Object} [object] The object to query keys on.
- * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
- */
-function isKey(value, object) {
-  if (isArray(value)) {
-    return false;
-  }
-  var type = typeof value;
-  if (type == 'number' || type == 'symbol' || type == 'boolean' ||
-      value == null || isSymbol(value)) {
-    return true;
-  }
-  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) ||
-    (object != null && value in Object(object));
-}
-
-module.exports = isKey;
-
-
-/***/ }),
-/* 23 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseGetTag = __webpack_require__(24),
-    isObjectLike = __webpack_require__(30);
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike(value) && baseGetTag(value) == symbolTag);
-}
-
-module.exports = isSymbol;
-
-
-/***/ }),
-/* 24 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Symbol = __webpack_require__(25),
-    getRawTag = __webpack_require__(28),
-    objectToString = __webpack_require__(29);
-
-/** `Object#toString` result references. */
-var nullTag = '[object Null]',
-    undefinedTag = '[object Undefined]';
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * The base implementation of `getTag` without fallbacks for buggy environments.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the `toStringTag`.
- */
-function baseGetTag(value) {
-  if (value == null) {
-    return value === undefined ? undefinedTag : nullTag;
-  }
-  return (symToStringTag && symToStringTag in Object(value))
-    ? getRawTag(value)
-    : objectToString(value);
-}
-
-module.exports = baseGetTag;
-
-
-/***/ }),
-/* 25 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var root = __webpack_require__(26);
-
-/** Built-in value references. */
-var Symbol = root.Symbol;
-
-module.exports = Symbol;
-
-
-/***/ }),
-/* 26 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var freeGlobal = __webpack_require__(27);
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-module.exports = root;
-
-
-/***/ }),
-/* 27 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g && __webpack_require__.g.Object === Object && __webpack_require__.g;
-
-module.exports = freeGlobal;
-
-
-/***/ }),
-/* 28 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Symbol = __webpack_require__(25);
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/** Built-in value references. */
-var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
-
-/**
- * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
- *
- * @private
- * @param {*} value The value to query.
- * @returns {string} Returns the raw `toStringTag`.
- */
-function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag),
-      tag = value[symToStringTag];
-
-  try {
-    value[symToStringTag] = undefined;
-    var unmasked = true;
-  } catch (e) {}
-
-  var result = nativeObjectToString.call(value);
-  if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag] = tag;
-    } else {
-      delete value[symToStringTag];
-    }
-  }
-  return result;
-}
-
-module.exports = getRawTag;
-
-
-/***/ }),
-/* 29 */
-/***/ ((module) => {
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var nativeObjectToString = objectProto.toString;
-
-/**
- * Converts `value` to a string using `Object.prototype.toString`.
- *
- * @private
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- */
-function objectToString(value) {
-  return nativeObjectToString.call(value);
-}
-
-module.exports = objectToString;
-
-
-/***/ }),
-/* 30 */
-/***/ ((module) => {
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return value != null && typeof value == 'object';
-}
-
-module.exports = isObjectLike;
-
-
-/***/ }),
-/* 31 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var memoizeCapped = __webpack_require__(32);
-
-/** Used to match property names within property paths. */
-var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
-
-/** Used to match backslashes in property paths. */
-var reEscapeChar = /\\(\\)?/g;
-
-/**
- * Converts `string` to a property path array.
- *
- * @private
- * @param {string} string The string to convert.
- * @returns {Array} Returns the property path array.
- */
-var stringToPath = memoizeCapped(function(string) {
-  var result = [];
-  if (string.charCodeAt(0) === 46 /* . */) {
-    result.push('');
-  }
-  string.replace(rePropName, function(match, number, quote, subString) {
-    result.push(quote ? subString.replace(reEscapeChar, '$1') : (number || match));
-  });
-  return result;
-});
-
-module.exports = stringToPath;
-
-
-/***/ }),
-/* 32 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var memoize = __webpack_require__(33);
-
-/** Used as the maximum memoize cache size. */
-var MAX_MEMOIZE_SIZE = 500;
-
-/**
- * A specialized version of `_.memoize` which clears the memoized function's
- * cache when it exceeds `MAX_MEMOIZE_SIZE`.
- *
- * @private
- * @param {Function} func The function to have its output memoized.
- * @returns {Function} Returns the new memoized function.
- */
-function memoizeCapped(func) {
-  var result = memoize(func, function(key) {
-    if (cache.size === MAX_MEMOIZE_SIZE) {
-      cache.clear();
-    }
-    return key;
-  });
-
-  var cache = result.cache;
-  return result;
-}
-
-module.exports = memoizeCapped;
-
-
-/***/ }),
-/* 33 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var MapCache = __webpack_require__(34);
-
-/** Error message constants. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/**
- * Creates a function that memoizes the result of `func`. If `resolver` is
- * provided, it determines the cache key for storing the result based on the
- * arguments provided to the memoized function. By default, the first argument
- * provided to the memoized function is used as the map cache key. The `func`
- * is invoked with the `this` binding of the memoized function.
- *
- * **Note:** The cache is exposed as the `cache` property on the memoized
- * function. Its creation may be customized by replacing the `_.memoize.Cache`
- * constructor with one whose instances implement the
- * [`Map`](http://ecma-international.org/ecma-262/7.0/#sec-properties-of-the-map-prototype-object)
- * method interface of `clear`, `delete`, `get`, `has`, and `set`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to have its output memoized.
- * @param {Function} [resolver] The function to resolve the cache key.
- * @returns {Function} Returns the new memoized function.
- * @example
- *
- * var object = { 'a': 1, 'b': 2 };
- * var other = { 'c': 3, 'd': 4 };
- *
- * var values = _.memoize(_.values);
- * values(object);
- * // => [1, 2]
- *
- * values(other);
- * // => [3, 4]
- *
- * object.a = 2;
- * values(object);
- * // => [1, 2]
- *
- * // Modify the result cache.
- * values.cache.set(object, ['a', 'b']);
- * values(object);
- * // => ['a', 'b']
- *
- * // Replace `_.memoize.Cache`.
- * _.memoize.Cache = WeakMap;
- */
-function memoize(func, resolver) {
-  if (typeof func != 'function' || (resolver != null && typeof resolver != 'function')) {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  var memoized = function() {
-    var args = arguments,
-        key = resolver ? resolver.apply(this, args) : args[0],
-        cache = memoized.cache;
-
-    if (cache.has(key)) {
-      return cache.get(key);
-    }
-    var result = func.apply(this, args);
-    memoized.cache = cache.set(key, result) || cache;
-    return result;
-  };
-  memoized.cache = new (memoize.Cache || MapCache);
-  return memoized;
-}
-
-// Expose `MapCache`.
-memoize.Cache = MapCache;
-
-module.exports = memoize;
-
-
-/***/ }),
-/* 34 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var mapCacheClear = __webpack_require__(35),
-    mapCacheDelete = __webpack_require__(60),
-    mapCacheGet = __webpack_require__(63),
-    mapCacheHas = __webpack_require__(64),
-    mapCacheSet = __webpack_require__(65);
-
-/**
- * Creates a map cache object to store key-value pairs.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function MapCache(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-// Add methods to `MapCache`.
-MapCache.prototype.clear = mapCacheClear;
-MapCache.prototype['delete'] = mapCacheDelete;
-MapCache.prototype.get = mapCacheGet;
-MapCache.prototype.has = mapCacheHas;
-MapCache.prototype.set = mapCacheSet;
-
-module.exports = MapCache;
-
-
-/***/ }),
-/* 35 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Hash = __webpack_require__(36),
-    ListCache = __webpack_require__(51),
-    Map = __webpack_require__(59);
-
-/**
- * Removes all key-value entries from the map.
- *
- * @private
- * @name clear
- * @memberOf MapCache
- */
-function mapCacheClear() {
-  this.size = 0;
-  this.__data__ = {
-    'hash': new Hash,
-    'map': new (Map || ListCache),
-    'string': new Hash
-  };
-}
-
-module.exports = mapCacheClear;
-
-
-/***/ }),
-/* 36 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var hashClear = __webpack_require__(37),
-    hashDelete = __webpack_require__(47),
-    hashGet = __webpack_require__(48),
-    hashHas = __webpack_require__(49),
-    hashSet = __webpack_require__(50);
-
-/**
- * Creates a hash object.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function Hash(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-// Add methods to `Hash`.
-Hash.prototype.clear = hashClear;
-Hash.prototype['delete'] = hashDelete;
-Hash.prototype.get = hashGet;
-Hash.prototype.has = hashHas;
-Hash.prototype.set = hashSet;
-
-module.exports = Hash;
-
-
-/***/ }),
-/* 37 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var nativeCreate = __webpack_require__(38);
-
-/**
- * Removes all key-value entries from the hash.
- *
- * @private
- * @name clear
- * @memberOf Hash
- */
-function hashClear() {
-  this.__data__ = nativeCreate ? nativeCreate(null) : {};
-  this.size = 0;
-}
-
-module.exports = hashClear;
-
-
-/***/ }),
-/* 38 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getNative = __webpack_require__(39);
-
-/* Built-in method references that are verified to be native. */
-var nativeCreate = getNative(Object, 'create');
-
-module.exports = nativeCreate;
-
-
-/***/ }),
-/* 39 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseIsNative = __webpack_require__(40),
-    getValue = __webpack_require__(46);
-
-/**
- * Gets the native function at `key` of `object`.
- *
- * @private
- * @param {Object} object The object to query.
- * @param {string} key The key of the method to get.
- * @returns {*} Returns the function if it's native, else `undefined`.
- */
-function getNative(object, key) {
-  var value = getValue(object, key);
-  return baseIsNative(value) ? value : undefined;
-}
-
-module.exports = getNative;
-
-
-/***/ }),
-/* 40 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isFunction = __webpack_require__(41),
-    isMasked = __webpack_require__(43),
-    isObject = __webpack_require__(42),
-    toSource = __webpack_require__(45);
-
-/**
- * Used to match `RegExp`
- * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
- */
-var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
-
-/** Used to detect host constructors (Safari). */
-var reIsHostCtor = /^\[object .+?Constructor\]$/;
-
-/** Used for built-in method references. */
-var funcProto = Function.prototype,
-    objectProto = Object.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/** Used to detect if a method is native. */
-var reIsNative = RegExp('^' +
-  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
-  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-);
-
-/**
- * The base implementation of `_.isNative` without bad shim checks.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a native function,
- *  else `false`.
- */
-function baseIsNative(value) {
-  if (!isObject(value) || isMasked(value)) {
-    return false;
-  }
-  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
-  return pattern.test(toSource(value));
-}
-
-module.exports = baseIsNative;
-
-
-/***/ }),
-/* 41 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseGetTag = __webpack_require__(24),
-    isObject = __webpack_require__(42);
-
-/** `Object#toString` result references. */
-var asyncTag = '[object AsyncFunction]',
-    funcTag = '[object Function]',
-    genTag = '[object GeneratorFunction]',
-    proxyTag = '[object Proxy]';
-
-/**
- * Checks if `value` is classified as a `Function` object.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a function, else `false`.
- * @example
- *
- * _.isFunction(_);
- * // => true
- *
- * _.isFunction(/abc/);
- * // => false
- */
-function isFunction(value) {
-  if (!isObject(value)) {
-    return false;
-  }
-  // The use of `Object#toString` avoids issues with the `typeof` operator
-  // in Safari 9 which returns 'object' for typed arrays and other constructors.
-  var tag = baseGetTag(value);
-  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
-}
-
-module.exports = isFunction;
-
-
-/***/ }),
-/* 42 */
-/***/ ((module) => {
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return value != null && (type == 'object' || type == 'function');
-}
-
-module.exports = isObject;
-
-
-/***/ }),
-/* 43 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var coreJsData = __webpack_require__(44);
-
-/** Used to detect methods masquerading as native. */
-var maskSrcKey = (function() {
-  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
-  return uid ? ('Symbol(src)_1.' + uid) : '';
-}());
-
-/**
- * Checks if `func` has its source masked.
- *
- * @private
- * @param {Function} func The function to check.
- * @returns {boolean} Returns `true` if `func` is masked, else `false`.
- */
-function isMasked(func) {
-  return !!maskSrcKey && (maskSrcKey in func);
-}
-
-module.exports = isMasked;
-
-
-/***/ }),
-/* 44 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var root = __webpack_require__(26);
-
-/** Used to detect overreaching core-js shims. */
-var coreJsData = root['__core-js_shared__'];
-
-module.exports = coreJsData;
-
-
-/***/ }),
-/* 45 */
-/***/ ((module) => {
-
-/** Used for built-in method references. */
-var funcProto = Function.prototype;
-
-/** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
-
-/**
- * Converts `func` to its source code.
- *
- * @private
- * @param {Function} func The function to convert.
- * @returns {string} Returns the source code.
- */
-function toSource(func) {
-  if (func != null) {
-    try {
-      return funcToString.call(func);
-    } catch (e) {}
-    try {
-      return (func + '');
-    } catch (e) {}
-  }
-  return '';
-}
-
-module.exports = toSource;
-
-
-/***/ }),
-/* 46 */
-/***/ ((module) => {
-
-/**
- * Gets the value at `key` of `object`.
- *
- * @private
- * @param {Object} [object] The object to query.
- * @param {string} key The key of the property to get.
- * @returns {*} Returns the property value.
- */
-function getValue(object, key) {
-  return object == null ? undefined : object[key];
-}
-
-module.exports = getValue;
-
-
-/***/ }),
-/* 47 */
-/***/ ((module) => {
-
-/**
- * Removes `key` and its value from the hash.
- *
- * @private
- * @name delete
- * @memberOf Hash
- * @param {Object} hash The hash to modify.
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function hashDelete(key) {
-  var result = this.has(key) && delete this.__data__[key];
-  this.size -= result ? 1 : 0;
-  return result;
-}
-
-module.exports = hashDelete;
-
-
-/***/ }),
-/* 48 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var nativeCreate = __webpack_require__(38);
-
-/** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED = '__lodash_hash_undefined__';
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Gets the hash value for `key`.
- *
- * @private
- * @name get
- * @memberOf Hash
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function hashGet(key) {
-  var data = this.__data__;
-  if (nativeCreate) {
-    var result = data[key];
-    return result === HASH_UNDEFINED ? undefined : result;
-  }
-  return hasOwnProperty.call(data, key) ? data[key] : undefined;
-}
-
-module.exports = hashGet;
-
-
-/***/ }),
-/* 49 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var nativeCreate = __webpack_require__(38);
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
-
-/**
- * Checks if a hash value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf Hash
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function hashHas(key) {
-  var data = this.__data__;
-  return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
-}
-
-module.exports = hashHas;
-
-
-/***/ }),
-/* 50 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var nativeCreate = __webpack_require__(38);
-
-/** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED = '__lodash_hash_undefined__';
-
-/**
- * Sets the hash `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf Hash
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the hash instance.
- */
-function hashSet(key, value) {
-  var data = this.__data__;
-  this.size += this.has(key) ? 0 : 1;
-  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
-  return this;
-}
-
-module.exports = hashSet;
-
-
-/***/ }),
-/* 51 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var listCacheClear = __webpack_require__(52),
-    listCacheDelete = __webpack_require__(53),
-    listCacheGet = __webpack_require__(56),
-    listCacheHas = __webpack_require__(57),
-    listCacheSet = __webpack_require__(58);
-
-/**
- * Creates an list cache object.
- *
- * @private
- * @constructor
- * @param {Array} [entries] The key-value pairs to cache.
- */
-function ListCache(entries) {
-  var index = -1,
-      length = entries == null ? 0 : entries.length;
-
-  this.clear();
-  while (++index < length) {
-    var entry = entries[index];
-    this.set(entry[0], entry[1]);
-  }
-}
-
-// Add methods to `ListCache`.
-ListCache.prototype.clear = listCacheClear;
-ListCache.prototype['delete'] = listCacheDelete;
-ListCache.prototype.get = listCacheGet;
-ListCache.prototype.has = listCacheHas;
-ListCache.prototype.set = listCacheSet;
-
-module.exports = ListCache;
-
-
-/***/ }),
-/* 52 */
-/***/ ((module) => {
-
-/**
- * Removes all key-value entries from the list cache.
- *
- * @private
- * @name clear
- * @memberOf ListCache
- */
-function listCacheClear() {
-  this.__data__ = [];
-  this.size = 0;
-}
-
-module.exports = listCacheClear;
-
-
-/***/ }),
-/* 53 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var assocIndexOf = __webpack_require__(54);
-
-/** Used for built-in method references. */
-var arrayProto = Array.prototype;
-
-/** Built-in value references. */
-var splice = arrayProto.splice;
-
-/**
- * Removes `key` and its value from the list cache.
- *
- * @private
- * @name delete
- * @memberOf ListCache
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function listCacheDelete(key) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  if (index < 0) {
-    return false;
-  }
-  var lastIndex = data.length - 1;
-  if (index == lastIndex) {
-    data.pop();
-  } else {
-    splice.call(data, index, 1);
-  }
-  --this.size;
-  return true;
-}
-
-module.exports = listCacheDelete;
-
-
-/***/ }),
-/* 54 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var eq = __webpack_require__(55);
-
-/**
- * Gets the index at which the `key` is found in `array` of key-value pairs.
- *
- * @private
- * @param {Array} array The array to inspect.
- * @param {*} key The key to search for.
- * @returns {number} Returns the index of the matched value, else `-1`.
- */
-function assocIndexOf(array, key) {
-  var length = array.length;
-  while (length--) {
-    if (eq(array[length][0], key)) {
-      return length;
-    }
-  }
-  return -1;
-}
-
-module.exports = assocIndexOf;
-
-
-/***/ }),
-/* 55 */
-/***/ ((module) => {
-
-/**
- * Performs a
- * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
- * comparison between two values to determine if they are equivalent.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to compare.
- * @param {*} other The other value to compare.
- * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
- * @example
- *
- * var object = { 'a': 1 };
- * var other = { 'a': 1 };
- *
- * _.eq(object, object);
- * // => true
- *
- * _.eq(object, other);
- * // => false
- *
- * _.eq('a', 'a');
- * // => true
- *
- * _.eq('a', Object('a'));
- * // => false
- *
- * _.eq(NaN, NaN);
- * // => true
- */
-function eq(value, other) {
-  return value === other || (value !== value && other !== other);
-}
-
-module.exports = eq;
-
-
-/***/ }),
-/* 56 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var assocIndexOf = __webpack_require__(54);
-
-/**
- * Gets the list cache value for `key`.
- *
- * @private
- * @name get
- * @memberOf ListCache
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function listCacheGet(key) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  return index < 0 ? undefined : data[index][1];
-}
-
-module.exports = listCacheGet;
-
-
-/***/ }),
-/* 57 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var assocIndexOf = __webpack_require__(54);
-
-/**
- * Checks if a list cache value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf ListCache
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function listCacheHas(key) {
-  return assocIndexOf(this.__data__, key) > -1;
-}
-
-module.exports = listCacheHas;
-
-
-/***/ }),
-/* 58 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var assocIndexOf = __webpack_require__(54);
-
-/**
- * Sets the list cache `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf ListCache
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the list cache instance.
- */
-function listCacheSet(key, value) {
-  var data = this.__data__,
-      index = assocIndexOf(data, key);
-
-  if (index < 0) {
-    ++this.size;
-    data.push([key, value]);
-  } else {
-    data[index][1] = value;
-  }
-  return this;
-}
-
-module.exports = listCacheSet;
-
-
-/***/ }),
-/* 59 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getNative = __webpack_require__(39),
-    root = __webpack_require__(26);
-
-/* Built-in method references that are verified to be native. */
-var Map = getNative(root, 'Map');
-
-module.exports = Map;
-
-
-/***/ }),
-/* 60 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getMapData = __webpack_require__(61);
-
-/**
- * Removes `key` and its value from the map.
- *
- * @private
- * @name delete
- * @memberOf MapCache
- * @param {string} key The key of the value to remove.
- * @returns {boolean} Returns `true` if the entry was removed, else `false`.
- */
-function mapCacheDelete(key) {
-  var result = getMapData(this, key)['delete'](key);
-  this.size -= result ? 1 : 0;
-  return result;
-}
-
-module.exports = mapCacheDelete;
-
-
-/***/ }),
-/* 61 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isKeyable = __webpack_require__(62);
-
-/**
- * Gets the data for `map`.
- *
- * @private
- * @param {Object} map The map to query.
- * @param {string} key The reference key.
- * @returns {*} Returns the map data.
- */
-function getMapData(map, key) {
-  var data = map.__data__;
-  return isKeyable(key)
-    ? data[typeof key == 'string' ? 'string' : 'hash']
-    : data.map;
-}
-
-module.exports = getMapData;
-
-
-/***/ }),
-/* 62 */
-/***/ ((module) => {
-
-/**
- * Checks if `value` is suitable for use as unique object key.
- *
- * @private
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
- */
-function isKeyable(value) {
-  var type = typeof value;
-  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
-    ? (value !== '__proto__')
-    : (value === null);
-}
-
-module.exports = isKeyable;
-
-
-/***/ }),
-/* 63 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getMapData = __webpack_require__(61);
-
-/**
- * Gets the map value for `key`.
- *
- * @private
- * @name get
- * @memberOf MapCache
- * @param {string} key The key of the value to get.
- * @returns {*} Returns the entry value.
- */
-function mapCacheGet(key) {
-  return getMapData(this, key).get(key);
-}
-
-module.exports = mapCacheGet;
-
-
-/***/ }),
-/* 64 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getMapData = __webpack_require__(61);
-
-/**
- * Checks if a map value for `key` exists.
- *
- * @private
- * @name has
- * @memberOf MapCache
- * @param {string} key The key of the entry to check.
- * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
- */
-function mapCacheHas(key) {
-  return getMapData(this, key).has(key);
-}
-
-module.exports = mapCacheHas;
-
-
-/***/ }),
-/* 65 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var getMapData = __webpack_require__(61);
-
-/**
- * Sets the map `key` to `value`.
- *
- * @private
- * @name set
- * @memberOf MapCache
- * @param {string} key The key of the value to set.
- * @param {*} value The value to set.
- * @returns {Object} Returns the map cache instance.
- */
-function mapCacheSet(key, value) {
-  var data = getMapData(this, key),
-      size = data.size;
-
-  data.set(key, value);
-  this.size += data.size == size ? 0 : 1;
-  return this;
-}
-
-module.exports = mapCacheSet;
-
-
-/***/ }),
-/* 66 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var baseToString = __webpack_require__(67);
-
-/**
- * Converts `value` to a string. An empty string is returned for `null`
- * and `undefined` values. The sign of `-0` is preserved.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to convert.
- * @returns {string} Returns the converted string.
- * @example
- *
- * _.toString(null);
- * // => ''
- *
- * _.toString(-0);
- * // => '-0'
- *
- * _.toString([1, 2, 3]);
- * // => '1,2,3'
- */
-function toString(value) {
-  return value == null ? '' : baseToString(value);
-}
-
-module.exports = toString;
-
-
-/***/ }),
-/* 67 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var Symbol = __webpack_require__(25),
-    arrayMap = __webpack_require__(68),
-    isArray = __webpack_require__(21),
-    isSymbol = __webpack_require__(23);
-
-/** Used as references for various `Number` constants. */
-var INFINITY = 1 / 0;
-
-/** Used to convert symbols to primitives and strings. */
-var symbolProto = Symbol ? Symbol.prototype : undefined,
-    symbolToString = symbolProto ? symbolProto.toString : undefined;
-
-/**
- * The base implementation of `_.toString` which doesn't convert nullish
- * values to empty strings.
- *
- * @private
- * @param {*} value The value to process.
- * @returns {string} Returns the string.
- */
-function baseToString(value) {
-  // Exit early for strings to avoid a performance hit in some environments.
-  if (typeof value == 'string') {
-    return value;
-  }
-  if (isArray(value)) {
-    // Recursively convert values (susceptible to call stack limits).
-    return arrayMap(value, baseToString) + '';
-  }
-  if (isSymbol(value)) {
-    return symbolToString ? symbolToString.call(value) : '';
-  }
-  var result = (value + '');
-  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
-}
-
-module.exports = baseToString;
-
-
-/***/ }),
-/* 68 */
-/***/ ((module) => {
-
-/**
- * A specialized version of `_.map` for arrays without support for iteratee
- * shorthands.
- *
- * @private
- * @param {Array} [array] The array to iterate over.
- * @param {Function} iteratee The function invoked per iteration.
- * @returns {Array} Returns the new mapped array.
- */
-function arrayMap(array, iteratee) {
-  var index = -1,
-      length = array == null ? 0 : array.length,
-      result = Array(length);
-
-  while (++index < length) {
-    result[index] = iteratee(array[index], index, array);
-  }
-  return result;
-}
-
-module.exports = arrayMap;
-
-
-/***/ }),
-/* 69 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-var isSymbol = __webpack_require__(23);
-
-/** Used as references for various `Number` constants. */
-var INFINITY = 1 / 0;
-
-/**
- * Converts `value` to a string key if it's not a string or symbol.
- *
- * @private
- * @param {*} value The value to inspect.
- * @returns {string|symbol} Returns the key.
- */
-function toKey(value) {
-  if (typeof value == 'string' || isSymbol(value)) {
-    return value;
-  }
-  var result = (value + '');
-  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
-}
-
-module.exports = toKey;
-
-
-/***/ }),
-/* 70 */
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
 "use strict";
 
-const pTimeout = __webpack_require__(71);
+const pTimeout = __webpack_require__(19);
 
 const pWaitFor = async (condition, options) => {
 	options = {
@@ -3569,13 +1922,13 @@ module.exports["default"] = pWaitFor;
 
 
 /***/ }),
-/* 71 */
+/* 19 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
 
 
-const pFinally = __webpack_require__(72);
+const pFinally = __webpack_require__(20);
 
 class TimeoutError extends Error {
 	constructor(message) {
@@ -3633,7 +1986,7 @@ module.exports.TimeoutError = TimeoutError;
 
 
 /***/ }),
-/* 72 */
+/* 20 */
 /***/ ((module) => {
 
 "use strict";
@@ -3655,15 +2008,15 @@ module.exports = (promise, onFinally) => {
 
 
 /***/ }),
-/* 73 */
+/* 21 */
 /***/ ((module, exports, __webpack_require__) => {
 
-var Minilog = __webpack_require__(74);
+var Minilog = __webpack_require__(22);
 
 var oldEnable = Minilog.enable,
     oldDisable = Minilog.disable,
     isChrome = (typeof navigator != 'undefined' && /chrome/i.test(navigator.userAgent)),
-    console = __webpack_require__(78);
+    console = __webpack_require__(26);
 
 // Use a more capable logging backend if on Chrome
 Minilog.defaultBackend = (isChrome ? console.minilog : console);
@@ -3695,19 +2048,19 @@ Minilog.disable = function() {
 exports = module.exports = Minilog;
 
 exports.backends = {
-  array: __webpack_require__(82),
+  array: __webpack_require__(30),
   browser: Minilog.defaultBackend,
-  localStorage: __webpack_require__(83),
-  jQuery: __webpack_require__(84)
+  localStorage: __webpack_require__(31),
+  jQuery: __webpack_require__(32)
 };
 
 
 /***/ }),
-/* 74 */
+/* 22 */
 /***/ ((module, exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75),
-    Filter = __webpack_require__(77);
+var Transform = __webpack_require__(23),
+    Filter = __webpack_require__(25);
 
 var log = new Transform(),
     slice = Array.prototype.slice;
@@ -3756,10 +2109,10 @@ exports.enable = function() {
 
 
 /***/ }),
-/* 75 */
+/* 23 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var microee = __webpack_require__(76);
+var microee = __webpack_require__(24);
 
 // Implements a subset of Node's stream.Transform - in a cross-platform manner.
 function Transform() {}
@@ -3834,7 +2187,7 @@ module.exports = Transform;
 
 
 /***/ }),
-/* 76 */
+/* 24 */
 /***/ ((module) => {
 
 function M() { this._events = {}; }
@@ -3890,11 +2243,11 @@ module.exports = M;
 
 
 /***/ }),
-/* 77 */
+/* 25 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 // default filter
-var Transform = __webpack_require__(75);
+var Transform = __webpack_require__(23);
 
 var levelMap = { debug: 1, info: 2, warn: 3, error: 4 };
 
@@ -3952,10 +2305,10 @@ module.exports = Filter;
 
 
 /***/ }),
-/* 78 */
+/* 26 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75);
+var Transform = __webpack_require__(23);
 
 var newlines = /\n+$/,
     logger = new Transform();
@@ -3983,18 +2336,18 @@ logger.write = function(name, level, args) {
 };
 
 logger.formatters = ['color', 'minilog'];
-logger.color = __webpack_require__(79);
-logger.minilog = __webpack_require__(81);
+logger.color = __webpack_require__(27);
+logger.minilog = __webpack_require__(29);
 
 module.exports = logger;
 
 
 /***/ }),
-/* 79 */
+/* 27 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75),
-    color = __webpack_require__(80);
+var Transform = __webpack_require__(23),
+    color = __webpack_require__(28);
 
 var colors = { debug: ['cyan'], info: ['purple' ], warn: [ 'yellow', true ], error: [ 'red', true ] },
     logger = new Transform();
@@ -4014,7 +2367,7 @@ module.exports = logger;
 
 
 /***/ }),
-/* 80 */
+/* 28 */
 /***/ ((module) => {
 
 var hex = {
@@ -4040,11 +2393,11 @@ module.exports = color;
 
 
 /***/ }),
-/* 81 */
+/* 29 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75),
-    color = __webpack_require__(80),
+var Transform = __webpack_require__(23),
+    color = __webpack_require__(28),
     colors = { debug: ['gray'], info: ['purple' ], warn: [ 'yellow', true ], error: [ 'red', true ] },
     logger = new Transform();
 
@@ -4072,10 +2425,10 @@ module.exports = logger;
 
 
 /***/ }),
-/* 82 */
+/* 30 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75),
+var Transform = __webpack_require__(23),
     cache = [ ];
 
 var logger = new Transform();
@@ -4092,10 +2445,10 @@ module.exports = logger;
 
 
 /***/ }),
-/* 83 */
+/* 31 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75),
+var Transform = __webpack_require__(23),
     cache = false;
 
 var logger = new Transform();
@@ -4112,10 +2465,10 @@ logger.write = function(name, level, args) {
 module.exports = logger;
 
 /***/ }),
-/* 84 */
+/* 32 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Transform = __webpack_require__(75);
+var Transform = __webpack_require__(23);
 
 var cid = new Date().valueOf().toString(36);
 
@@ -4192,7 +2545,7 @@ module.exports = AjaxLogger;
 
 
 /***/ }),
-/* 85 */
+/* 33 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -4213,17 +2566,17 @@ var _classCallCheck2 = _interopRequireDefault(__webpack_require__(14));
 
 var _createClass2 = _interopRequireDefault(__webpack_require__(15));
 
-var _inherits2 = _interopRequireDefault(__webpack_require__(86));
+var _inherits2 = _interopRequireDefault(__webpack_require__(34));
 
-var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(88));
+var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(36));
 
-var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(90));
+var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(38));
 
-var _postMe = __webpack_require__(91);
+var _postMe = __webpack_require__(39);
 
-var _ContentScriptMessenger = _interopRequireDefault(__webpack_require__(92));
+var _ContentScriptMessenger = _interopRequireDefault(__webpack_require__(40));
 
-var _bridgeInterfaces = __webpack_require__(93);
+var _bridgeInterfaces = __webpack_require__(41);
 
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = (0, _getPrototypeOf2.default)(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = (0, _getPrototypeOf2.default)(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return (0, _possibleConstructorReturn2.default)(this, result); }; }
 
@@ -4300,10 +2653,10 @@ var LauncherBridge = /*#__PURE__*/function (_Bridge) {
 exports["default"] = LauncherBridge;
 
 /***/ }),
-/* 86 */
+/* 34 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var setPrototypeOf = __webpack_require__(87);
+var setPrototypeOf = __webpack_require__(35);
 function _inherits(subClass, superClass) {
   if (typeof superClass !== "function" && superClass !== null) {
     throw new TypeError("Super expression must either be null or a function");
@@ -4323,7 +2676,7 @@ function _inherits(subClass, superClass) {
 module.exports = _inherits, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
 /***/ }),
-/* 87 */
+/* 35 */
 /***/ ((module) => {
 
 function _setPrototypeOf(o, p) {
@@ -4336,11 +2689,11 @@ function _setPrototypeOf(o, p) {
 module.exports = _setPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
 /***/ }),
-/* 88 */
+/* 36 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 var _typeof = (__webpack_require__(6)["default"]);
-var assertThisInitialized = __webpack_require__(89);
+var assertThisInitialized = __webpack_require__(37);
 function _possibleConstructorReturn(self, call) {
   if (call && (_typeof(call) === "object" || typeof call === "function")) {
     return call;
@@ -4352,7 +2705,7 @@ function _possibleConstructorReturn(self, call) {
 module.exports = _possibleConstructorReturn, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
 /***/ }),
-/* 89 */
+/* 37 */
 /***/ ((module) => {
 
 function _assertThisInitialized(self) {
@@ -4364,7 +2717,7 @@ function _assertThisInitialized(self) {
 module.exports = _assertThisInitialized, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
 /***/ }),
-/* 90 */
+/* 38 */
 /***/ ((module) => {
 
 function _getPrototypeOf(o) {
@@ -4376,7 +2729,7 @@ function _getPrototypeOf(o) {
 module.exports = _getPrototypeOf, module.exports.__esModule = true, module.exports["default"] = module.exports;
 
 /***/ }),
-/* 91 */
+/* 39 */
 /***/ (function(module, exports) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -5361,7 +3714,7 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 
 /***/ }),
-/* 92 */
+/* 40 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -5378,13 +3731,13 @@ var _classCallCheck2 = _interopRequireDefault(__webpack_require__(14));
 
 var _createClass2 = _interopRequireDefault(__webpack_require__(15));
 
-var _inherits2 = _interopRequireDefault(__webpack_require__(86));
+var _inherits2 = _interopRequireDefault(__webpack_require__(34));
 
-var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(88));
+var _possibleConstructorReturn2 = _interopRequireDefault(__webpack_require__(36));
 
-var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(90));
+var _getPrototypeOf2 = _interopRequireDefault(__webpack_require__(38));
 
-var _bridgeInterfaces = __webpack_require__(93);
+var _bridgeInterfaces = __webpack_require__(41);
 
 function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = (0, _getPrototypeOf2.default)(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = (0, _getPrototypeOf2.default)(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return (0, _possibleConstructorReturn2.default)(this, result); }; }
 
@@ -5443,7 +3796,7 @@ var ReactNativeWebviewMessenger = /*#__PURE__*/function (_MessengerInterface) {
 exports["default"] = ReactNativeWebviewMessenger;
 
 /***/ }),
-/* 93 */
+/* 41 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -5647,7 +4000,7 @@ var MessengerInterface = /*#__PURE__*/function () {
 exports.MessengerInterface = MessengerInterface;
 
 /***/ }),
-/* 94 */
+/* 42 */
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -5703,7 +4056,7 @@ function _blobToBase() {
 }
 
 /***/ }),
-/* 95 */
+/* 43 */
 /***/ (function(module, __unused_webpack_exports, __webpack_require__) {
 
 (function (global, factory) {
@@ -6246,11 +4599,11 @@ function _blobToBase() {
 
 
 /***/ }),
-/* 96 */
+/* 44 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseAssignValue = __webpack_require__(97),
-    createAggregator = __webpack_require__(99);
+var baseAssignValue = __webpack_require__(45),
+    createAggregator = __webpack_require__(61);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -6293,10 +4646,10 @@ module.exports = groupBy;
 
 
 /***/ }),
-/* 97 */
+/* 45 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var defineProperty = __webpack_require__(98);
+var defineProperty = __webpack_require__(46);
 
 /**
  * The base implementation of `assignValue` and `assignMergeValue` without
@@ -6324,10 +4677,10 @@ module.exports = baseAssignValue;
 
 
 /***/ }),
-/* 98 */
+/* 46 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getNative = __webpack_require__(39);
+var getNative = __webpack_require__(47);
 
 var defineProperty = (function() {
   try {
@@ -6341,13 +4694,409 @@ module.exports = defineProperty;
 
 
 /***/ }),
-/* 99 */
+/* 47 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var arrayAggregator = __webpack_require__(100),
-    baseAggregator = __webpack_require__(101),
-    baseIteratee = __webpack_require__(125),
-    isArray = __webpack_require__(21);
+var baseIsNative = __webpack_require__(48),
+    getValue = __webpack_require__(60);
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = getValue(object, key);
+  return baseIsNative(value) ? value : undefined;
+}
+
+module.exports = getNative;
+
+
+/***/ }),
+/* 48 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isFunction = __webpack_require__(49),
+    isMasked = __webpack_require__(57),
+    isObject = __webpack_require__(56),
+    toSource = __webpack_require__(59);
+
+/**
+ * Used to match `RegExp`
+ * [syntax characters](http://ecma-international.org/ecma-262/7.0/#sec-patterns).
+ */
+var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
+
+/** Used to detect host constructors (Safari). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype,
+    objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  funcToString.call(hasOwnProperty).replace(reRegExpChar, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/**
+ * The base implementation of `_.isNative` without bad shim checks.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function,
+ *  else `false`.
+ */
+function baseIsNative(value) {
+  if (!isObject(value) || isMasked(value)) {
+    return false;
+  }
+  var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
+  return pattern.test(toSource(value));
+}
+
+module.exports = baseIsNative;
+
+
+/***/ }),
+/* 49 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseGetTag = __webpack_require__(50),
+    isObject = __webpack_require__(56);
+
+/** `Object#toString` result references. */
+var asyncTag = '[object AsyncFunction]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]',
+    proxyTag = '[object Proxy]';
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  if (!isObject(value)) {
+    return false;
+  }
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+  var tag = baseGetTag(value);
+  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+}
+
+module.exports = isFunction;
+
+
+/***/ }),
+/* 50 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Symbol = __webpack_require__(51),
+    getRawTag = __webpack_require__(54),
+    objectToString = __webpack_require__(55);
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]',
+    undefinedTag = '[object Undefined]';
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+module.exports = baseGetTag;
+
+
+/***/ }),
+/* 51 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var root = __webpack_require__(52);
+
+/** Built-in value references. */
+var Symbol = root.Symbol;
+
+module.exports = Symbol;
+
+
+/***/ }),
+/* 52 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var freeGlobal = __webpack_require__(53);
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+module.exports = root;
+
+
+/***/ }),
+/* 53 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g && __webpack_require__.g.Object === Object && __webpack_require__.g;
+
+module.exports = freeGlobal;
+
+
+/***/ }),
+/* 54 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Symbol = __webpack_require__(51);
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Built-in value references. */
+var symToStringTag = Symbol ? Symbol.toStringTag : undefined;
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag),
+      tag = value[symToStringTag];
+
+  try {
+    value[symToStringTag] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag] = tag;
+    } else {
+      delete value[symToStringTag];
+    }
+  }
+  return result;
+}
+
+module.exports = getRawTag;
+
+
+/***/ }),
+/* 55 */
+/***/ ((module) => {
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString.call(value);
+}
+
+module.exports = objectToString;
+
+
+/***/ }),
+/* 56 */
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return value != null && (type == 'object' || type == 'function');
+}
+
+module.exports = isObject;
+
+
+/***/ }),
+/* 57 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var coreJsData = __webpack_require__(58);
+
+/** Used to detect methods masquerading as native. */
+var maskSrcKey = (function() {
+  var uid = /[^.]+$/.exec(coreJsData && coreJsData.keys && coreJsData.keys.IE_PROTO || '');
+  return uid ? ('Symbol(src)_1.' + uid) : '';
+}());
+
+/**
+ * Checks if `func` has its source masked.
+ *
+ * @private
+ * @param {Function} func The function to check.
+ * @returns {boolean} Returns `true` if `func` is masked, else `false`.
+ */
+function isMasked(func) {
+  return !!maskSrcKey && (maskSrcKey in func);
+}
+
+module.exports = isMasked;
+
+
+/***/ }),
+/* 58 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var root = __webpack_require__(52);
+
+/** Used to detect overreaching core-js shims. */
+var coreJsData = root['__core-js_shared__'];
+
+module.exports = coreJsData;
+
+
+/***/ }),
+/* 59 */
+/***/ ((module) => {
+
+/** Used for built-in method references. */
+var funcProto = Function.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var funcToString = funcProto.toString;
+
+/**
+ * Converts `func` to its source code.
+ *
+ * @private
+ * @param {Function} func The function to convert.
+ * @returns {string} Returns the source code.
+ */
+function toSource(func) {
+  if (func != null) {
+    try {
+      return funcToString.call(func);
+    } catch (e) {}
+    try {
+      return (func + '');
+    } catch (e) {}
+  }
+  return '';
+}
+
+module.exports = toSource;
+
+
+/***/ }),
+/* 60 */
+/***/ ((module) => {
+
+/**
+ * Gets the value at `key` of `object`.
+ *
+ * @private
+ * @param {Object} [object] The object to query.
+ * @param {string} key The key of the property to get.
+ * @returns {*} Returns the property value.
+ */
+function getValue(object, key) {
+  return object == null ? undefined : object[key];
+}
+
+module.exports = getValue;
+
+
+/***/ }),
+/* 61 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var arrayAggregator = __webpack_require__(62),
+    baseAggregator = __webpack_require__(63),
+    baseIteratee = __webpack_require__(89),
+    isArray = __webpack_require__(74);
 
 /**
  * Creates a function like `_.groupBy`.
@@ -6370,7 +5119,7 @@ module.exports = createAggregator;
 
 
 /***/ }),
-/* 100 */
+/* 62 */
 /***/ ((module) => {
 
 /**
@@ -6398,10 +5147,10 @@ module.exports = arrayAggregator;
 
 
 /***/ }),
-/* 101 */
+/* 63 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseEach = __webpack_require__(102);
+var baseEach = __webpack_require__(64);
 
 /**
  * Aggregates elements of `collection` on `accumulator` with keys transformed
@@ -6425,11 +5174,11 @@ module.exports = baseAggregator;
 
 
 /***/ }),
-/* 102 */
+/* 64 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseForOwn = __webpack_require__(103),
-    createBaseEach = __webpack_require__(124);
+var baseForOwn = __webpack_require__(65),
+    createBaseEach = __webpack_require__(88);
 
 /**
  * The base implementation of `_.forEach` without support for iteratee shorthands.
@@ -6445,11 +5194,11 @@ module.exports = baseEach;
 
 
 /***/ }),
-/* 103 */
+/* 65 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseFor = __webpack_require__(104),
-    keys = __webpack_require__(106);
+var baseFor = __webpack_require__(66),
+    keys = __webpack_require__(68);
 
 /**
  * The base implementation of `_.forOwn` without support for iteratee shorthands.
@@ -6467,10 +5216,10 @@ module.exports = baseForOwn;
 
 
 /***/ }),
-/* 104 */
+/* 66 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var createBaseFor = __webpack_require__(105);
+var createBaseFor = __webpack_require__(67);
 
 /**
  * The base implementation of `baseForOwn` which iterates over `object`
@@ -6489,7 +5238,7 @@ module.exports = baseFor;
 
 
 /***/ }),
-/* 105 */
+/* 67 */
 /***/ ((module) => {
 
 /**
@@ -6520,12 +5269,12 @@ module.exports = createBaseFor;
 
 
 /***/ }),
-/* 106 */
+/* 68 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var arrayLikeKeys = __webpack_require__(107),
-    baseKeys = __webpack_require__(119),
-    isArrayLike = __webpack_require__(123);
+var arrayLikeKeys = __webpack_require__(69),
+    baseKeys = __webpack_require__(83),
+    isArrayLike = __webpack_require__(87);
 
 /**
  * Creates an array of the own enumerable property names of `object`.
@@ -6563,15 +5312,15 @@ module.exports = keys;
 
 
 /***/ }),
-/* 107 */
+/* 69 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseTimes = __webpack_require__(108),
-    isArguments = __webpack_require__(109),
-    isArray = __webpack_require__(21),
-    isBuffer = __webpack_require__(111),
-    isIndex = __webpack_require__(113),
-    isTypedArray = __webpack_require__(114);
+var baseTimes = __webpack_require__(70),
+    isArguments = __webpack_require__(71),
+    isArray = __webpack_require__(74),
+    isBuffer = __webpack_require__(75),
+    isIndex = __webpack_require__(77),
+    isTypedArray = __webpack_require__(78);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -6618,7 +5367,7 @@ module.exports = arrayLikeKeys;
 
 
 /***/ }),
-/* 108 */
+/* 70 */
 /***/ ((module) => {
 
 /**
@@ -6644,11 +5393,11 @@ module.exports = baseTimes;
 
 
 /***/ }),
-/* 109 */
+/* 71 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseIsArguments = __webpack_require__(110),
-    isObjectLike = __webpack_require__(30);
+var baseIsArguments = __webpack_require__(72),
+    isObjectLike = __webpack_require__(73);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -6686,11 +5435,11 @@ module.exports = isArguments;
 
 
 /***/ }),
-/* 110 */
+/* 72 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseGetTag = __webpack_require__(24),
-    isObjectLike = __webpack_require__(30);
+var baseGetTag = __webpack_require__(50),
+    isObjectLike = __webpack_require__(73);
 
 /** `Object#toString` result references. */
 var argsTag = '[object Arguments]';
@@ -6710,12 +5459,79 @@ module.exports = baseIsArguments;
 
 
 /***/ }),
-/* 111 */
+/* 73 */
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+module.exports = isObjectLike;
+
+
+/***/ }),
+/* 74 */
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+module.exports = isArray;
+
+
+/***/ }),
+/* 75 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /* module decorator */ module = __webpack_require__.nmd(module);
-var root = __webpack_require__(26),
-    stubFalse = __webpack_require__(112);
+var root = __webpack_require__(52),
+    stubFalse = __webpack_require__(76);
 
 /** Detect free variable `exports`. */
 var freeExports =  true && exports && !exports.nodeType && exports;
@@ -6755,7 +5571,7 @@ module.exports = isBuffer;
 
 
 /***/ }),
-/* 112 */
+/* 76 */
 /***/ ((module) => {
 
 /**
@@ -6779,7 +5595,7 @@ module.exports = stubFalse;
 
 
 /***/ }),
-/* 113 */
+/* 77 */
 /***/ ((module) => {
 
 /** Used as references for various `Number` constants. */
@@ -6810,12 +5626,12 @@ module.exports = isIndex;
 
 
 /***/ }),
-/* 114 */
+/* 78 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseIsTypedArray = __webpack_require__(115),
-    baseUnary = __webpack_require__(117),
-    nodeUtil = __webpack_require__(118);
+var baseIsTypedArray = __webpack_require__(79),
+    baseUnary = __webpack_require__(81),
+    nodeUtil = __webpack_require__(82);
 
 /* Node.js helper references. */
 var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
@@ -6843,12 +5659,12 @@ module.exports = isTypedArray;
 
 
 /***/ }),
-/* 115 */
+/* 79 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseGetTag = __webpack_require__(24),
-    isLength = __webpack_require__(116),
-    isObjectLike = __webpack_require__(30);
+var baseGetTag = __webpack_require__(50),
+    isLength = __webpack_require__(80),
+    isObjectLike = __webpack_require__(73);
 
 /** `Object#toString` result references. */
 var argsTag = '[object Arguments]',
@@ -6909,7 +5725,7 @@ module.exports = baseIsTypedArray;
 
 
 /***/ }),
-/* 116 */
+/* 80 */
 /***/ ((module) => {
 
 /** Used as references for various `Number` constants. */
@@ -6950,7 +5766,7 @@ module.exports = isLength;
 
 
 /***/ }),
-/* 117 */
+/* 81 */
 /***/ ((module) => {
 
 /**
@@ -6970,11 +5786,11 @@ module.exports = baseUnary;
 
 
 /***/ }),
-/* 118 */
+/* 82 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /* module decorator */ module = __webpack_require__.nmd(module);
-var freeGlobal = __webpack_require__(27);
+var freeGlobal = __webpack_require__(53);
 
 /** Detect free variable `exports`. */
 var freeExports =  true && exports && !exports.nodeType && exports;
@@ -7007,11 +5823,11 @@ module.exports = nodeUtil;
 
 
 /***/ }),
-/* 119 */
+/* 83 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var isPrototype = __webpack_require__(120),
-    nativeKeys = __webpack_require__(121);
+var isPrototype = __webpack_require__(84),
+    nativeKeys = __webpack_require__(85);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -7043,7 +5859,7 @@ module.exports = baseKeys;
 
 
 /***/ }),
-/* 120 */
+/* 84 */
 /***/ ((module) => {
 
 /** Used for built-in method references. */
@@ -7067,10 +5883,10 @@ module.exports = isPrototype;
 
 
 /***/ }),
-/* 121 */
+/* 85 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var overArg = __webpack_require__(122);
+var overArg = __webpack_require__(86);
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
 var nativeKeys = overArg(Object.keys, Object);
@@ -7079,7 +5895,7 @@ module.exports = nativeKeys;
 
 
 /***/ }),
-/* 122 */
+/* 86 */
 /***/ ((module) => {
 
 /**
@@ -7100,11 +5916,11 @@ module.exports = overArg;
 
 
 /***/ }),
-/* 123 */
+/* 87 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var isFunction = __webpack_require__(41),
-    isLength = __webpack_require__(116);
+var isFunction = __webpack_require__(49),
+    isLength = __webpack_require__(80);
 
 /**
  * Checks if `value` is array-like. A value is considered array-like if it's
@@ -7139,10 +5955,10 @@ module.exports = isArrayLike;
 
 
 /***/ }),
-/* 124 */
+/* 88 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var isArrayLike = __webpack_require__(123);
+var isArrayLike = __webpack_require__(87);
 
 /**
  * Creates a `baseEach` or `baseEachRight` function.
@@ -7177,13 +5993,13 @@ module.exports = createBaseEach;
 
 
 /***/ }),
-/* 125 */
+/* 89 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseMatches = __webpack_require__(126),
-    baseMatchesProperty = __webpack_require__(161),
+var baseMatches = __webpack_require__(90),
+    baseMatchesProperty = __webpack_require__(149),
     identity = __webpack_require__(165),
-    isArray = __webpack_require__(21),
+    isArray = __webpack_require__(74),
     property = __webpack_require__(166);
 
 /**
@@ -7214,12 +6030,12 @@ module.exports = baseIteratee;
 
 
 /***/ }),
-/* 126 */
+/* 90 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseIsMatch = __webpack_require__(127),
-    getMatchData = __webpack_require__(158),
-    matchesStrictComparable = __webpack_require__(160);
+var baseIsMatch = __webpack_require__(91),
+    getMatchData = __webpack_require__(146),
+    matchesStrictComparable = __webpack_require__(148);
 
 /**
  * The base implementation of `_.matches` which doesn't clone `source`.
@@ -7242,11 +6058,11 @@ module.exports = baseMatches;
 
 
 /***/ }),
-/* 127 */
+/* 91 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Stack = __webpack_require__(128),
-    baseIsEqual = __webpack_require__(134);
+var Stack = __webpack_require__(92),
+    baseIsEqual = __webpack_require__(122);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1,
@@ -7310,15 +6126,15 @@ module.exports = baseIsMatch;
 
 
 /***/ }),
-/* 128 */
+/* 92 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var ListCache = __webpack_require__(51),
-    stackClear = __webpack_require__(129),
-    stackDelete = __webpack_require__(130),
-    stackGet = __webpack_require__(131),
-    stackHas = __webpack_require__(132),
-    stackSet = __webpack_require__(133);
+var ListCache = __webpack_require__(93),
+    stackClear = __webpack_require__(101),
+    stackDelete = __webpack_require__(102),
+    stackGet = __webpack_require__(103),
+    stackHas = __webpack_require__(104),
+    stackSet = __webpack_require__(105);
 
 /**
  * Creates a stack cache object to store key-value pairs.
@@ -7343,10 +6159,257 @@ module.exports = Stack;
 
 
 /***/ }),
-/* 129 */
+/* 93 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var ListCache = __webpack_require__(51);
+var listCacheClear = __webpack_require__(94),
+    listCacheDelete = __webpack_require__(95),
+    listCacheGet = __webpack_require__(98),
+    listCacheHas = __webpack_require__(99),
+    listCacheSet = __webpack_require__(100);
+
+/**
+ * Creates an list cache object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function ListCache(entries) {
+  var index = -1,
+      length = entries == null ? 0 : entries.length;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `ListCache`.
+ListCache.prototype.clear = listCacheClear;
+ListCache.prototype['delete'] = listCacheDelete;
+ListCache.prototype.get = listCacheGet;
+ListCache.prototype.has = listCacheHas;
+ListCache.prototype.set = listCacheSet;
+
+module.exports = ListCache;
+
+
+/***/ }),
+/* 94 */
+/***/ ((module) => {
+
+/**
+ * Removes all key-value entries from the list cache.
+ *
+ * @private
+ * @name clear
+ * @memberOf ListCache
+ */
+function listCacheClear() {
+  this.__data__ = [];
+  this.size = 0;
+}
+
+module.exports = listCacheClear;
+
+
+/***/ }),
+/* 95 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var assocIndexOf = __webpack_require__(96);
+
+/** Used for built-in method references. */
+var arrayProto = Array.prototype;
+
+/** Built-in value references. */
+var splice = arrayProto.splice;
+
+/**
+ * Removes `key` and its value from the list cache.
+ *
+ * @private
+ * @name delete
+ * @memberOf ListCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function listCacheDelete(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    return false;
+  }
+  var lastIndex = data.length - 1;
+  if (index == lastIndex) {
+    data.pop();
+  } else {
+    splice.call(data, index, 1);
+  }
+  --this.size;
+  return true;
+}
+
+module.exports = listCacheDelete;
+
+
+/***/ }),
+/* 96 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var eq = __webpack_require__(97);
+
+/**
+ * Gets the index at which the `key` is found in `array` of key-value pairs.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {*} key The key to search for.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function assocIndexOf(array, key) {
+  var length = array.length;
+  while (length--) {
+    if (eq(array[length][0], key)) {
+      return length;
+    }
+  }
+  return -1;
+}
+
+module.exports = assocIndexOf;
+
+
+/***/ }),
+/* 97 */
+/***/ ((module) => {
+
+/**
+ * Performs a
+ * [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+ * comparison between two values to determine if they are equivalent.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to compare.
+ * @param {*} other The other value to compare.
+ * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ * var other = { 'a': 1 };
+ *
+ * _.eq(object, object);
+ * // => true
+ *
+ * _.eq(object, other);
+ * // => false
+ *
+ * _.eq('a', 'a');
+ * // => true
+ *
+ * _.eq('a', Object('a'));
+ * // => false
+ *
+ * _.eq(NaN, NaN);
+ * // => true
+ */
+function eq(value, other) {
+  return value === other || (value !== value && other !== other);
+}
+
+module.exports = eq;
+
+
+/***/ }),
+/* 98 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var assocIndexOf = __webpack_require__(96);
+
+/**
+ * Gets the list cache value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf ListCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function listCacheGet(key) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  return index < 0 ? undefined : data[index][1];
+}
+
+module.exports = listCacheGet;
+
+
+/***/ }),
+/* 99 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var assocIndexOf = __webpack_require__(96);
+
+/**
+ * Checks if a list cache value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf ListCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function listCacheHas(key) {
+  return assocIndexOf(this.__data__, key) > -1;
+}
+
+module.exports = listCacheHas;
+
+
+/***/ }),
+/* 100 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var assocIndexOf = __webpack_require__(96);
+
+/**
+ * Sets the list cache `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf ListCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the list cache instance.
+ */
+function listCacheSet(key, value) {
+  var data = this.__data__,
+      index = assocIndexOf(data, key);
+
+  if (index < 0) {
+    ++this.size;
+    data.push([key, value]);
+  } else {
+    data[index][1] = value;
+  }
+  return this;
+}
+
+module.exports = listCacheSet;
+
+
+/***/ }),
+/* 101 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var ListCache = __webpack_require__(93);
 
 /**
  * Removes all key-value entries from the stack.
@@ -7364,7 +6427,7 @@ module.exports = stackClear;
 
 
 /***/ }),
-/* 130 */
+/* 102 */
 /***/ ((module) => {
 
 /**
@@ -7388,7 +6451,7 @@ module.exports = stackDelete;
 
 
 /***/ }),
-/* 131 */
+/* 103 */
 /***/ ((module) => {
 
 /**
@@ -7408,7 +6471,7 @@ module.exports = stackGet;
 
 
 /***/ }),
-/* 132 */
+/* 104 */
 /***/ ((module) => {
 
 /**
@@ -7428,12 +6491,12 @@ module.exports = stackHas;
 
 
 /***/ }),
-/* 133 */
+/* 105 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var ListCache = __webpack_require__(51),
-    Map = __webpack_require__(59),
-    MapCache = __webpack_require__(34);
+var ListCache = __webpack_require__(93),
+    Map = __webpack_require__(106),
+    MapCache = __webpack_require__(107);
 
 /** Used as the size to enable large array optimizations. */
 var LARGE_ARRAY_SIZE = 200;
@@ -7468,11 +6531,418 @@ module.exports = stackSet;
 
 
 /***/ }),
-/* 134 */
+/* 106 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseIsEqualDeep = __webpack_require__(135),
-    isObjectLike = __webpack_require__(30);
+var getNative = __webpack_require__(47),
+    root = __webpack_require__(52);
+
+/* Built-in method references that are verified to be native. */
+var Map = getNative(root, 'Map');
+
+module.exports = Map;
+
+
+/***/ }),
+/* 107 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var mapCacheClear = __webpack_require__(108),
+    mapCacheDelete = __webpack_require__(116),
+    mapCacheGet = __webpack_require__(119),
+    mapCacheHas = __webpack_require__(120),
+    mapCacheSet = __webpack_require__(121);
+
+/**
+ * Creates a map cache object to store key-value pairs.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function MapCache(entries) {
+  var index = -1,
+      length = entries == null ? 0 : entries.length;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `MapCache`.
+MapCache.prototype.clear = mapCacheClear;
+MapCache.prototype['delete'] = mapCacheDelete;
+MapCache.prototype.get = mapCacheGet;
+MapCache.prototype.has = mapCacheHas;
+MapCache.prototype.set = mapCacheSet;
+
+module.exports = MapCache;
+
+
+/***/ }),
+/* 108 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Hash = __webpack_require__(109),
+    ListCache = __webpack_require__(93),
+    Map = __webpack_require__(106);
+
+/**
+ * Removes all key-value entries from the map.
+ *
+ * @private
+ * @name clear
+ * @memberOf MapCache
+ */
+function mapCacheClear() {
+  this.size = 0;
+  this.__data__ = {
+    'hash': new Hash,
+    'map': new (Map || ListCache),
+    'string': new Hash
+  };
+}
+
+module.exports = mapCacheClear;
+
+
+/***/ }),
+/* 109 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var hashClear = __webpack_require__(110),
+    hashDelete = __webpack_require__(112),
+    hashGet = __webpack_require__(113),
+    hashHas = __webpack_require__(114),
+    hashSet = __webpack_require__(115);
+
+/**
+ * Creates a hash object.
+ *
+ * @private
+ * @constructor
+ * @param {Array} [entries] The key-value pairs to cache.
+ */
+function Hash(entries) {
+  var index = -1,
+      length = entries == null ? 0 : entries.length;
+
+  this.clear();
+  while (++index < length) {
+    var entry = entries[index];
+    this.set(entry[0], entry[1]);
+  }
+}
+
+// Add methods to `Hash`.
+Hash.prototype.clear = hashClear;
+Hash.prototype['delete'] = hashDelete;
+Hash.prototype.get = hashGet;
+Hash.prototype.has = hashHas;
+Hash.prototype.set = hashSet;
+
+module.exports = Hash;
+
+
+/***/ }),
+/* 110 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var nativeCreate = __webpack_require__(111);
+
+/**
+ * Removes all key-value entries from the hash.
+ *
+ * @private
+ * @name clear
+ * @memberOf Hash
+ */
+function hashClear() {
+  this.__data__ = nativeCreate ? nativeCreate(null) : {};
+  this.size = 0;
+}
+
+module.exports = hashClear;
+
+
+/***/ }),
+/* 111 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var getNative = __webpack_require__(47);
+
+/* Built-in method references that are verified to be native. */
+var nativeCreate = getNative(Object, 'create');
+
+module.exports = nativeCreate;
+
+
+/***/ }),
+/* 112 */
+/***/ ((module) => {
+
+/**
+ * Removes `key` and its value from the hash.
+ *
+ * @private
+ * @name delete
+ * @memberOf Hash
+ * @param {Object} hash The hash to modify.
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function hashDelete(key) {
+  var result = this.has(key) && delete this.__data__[key];
+  this.size -= result ? 1 : 0;
+  return result;
+}
+
+module.exports = hashDelete;
+
+
+/***/ }),
+/* 113 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var nativeCreate = __webpack_require__(111);
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Gets the hash value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf Hash
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function hashGet(key) {
+  var data = this.__data__;
+  if (nativeCreate) {
+    var result = data[key];
+    return result === HASH_UNDEFINED ? undefined : result;
+  }
+  return hasOwnProperty.call(data, key) ? data[key] : undefined;
+}
+
+module.exports = hashGet;
+
+
+/***/ }),
+/* 114 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var nativeCreate = __webpack_require__(111);
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Checks if a hash value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf Hash
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function hashHas(key) {
+  var data = this.__data__;
+  return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
+}
+
+module.exports = hashHas;
+
+
+/***/ }),
+/* 115 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var nativeCreate = __webpack_require__(111);
+
+/** Used to stand-in for `undefined` hash values. */
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
+
+/**
+ * Sets the hash `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf Hash
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the hash instance.
+ */
+function hashSet(key, value) {
+  var data = this.__data__;
+  this.size += this.has(key) ? 0 : 1;
+  data[key] = (nativeCreate && value === undefined) ? HASH_UNDEFINED : value;
+  return this;
+}
+
+module.exports = hashSet;
+
+
+/***/ }),
+/* 116 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var getMapData = __webpack_require__(117);
+
+/**
+ * Removes `key` and its value from the map.
+ *
+ * @private
+ * @name delete
+ * @memberOf MapCache
+ * @param {string} key The key of the value to remove.
+ * @returns {boolean} Returns `true` if the entry was removed, else `false`.
+ */
+function mapCacheDelete(key) {
+  var result = getMapData(this, key)['delete'](key);
+  this.size -= result ? 1 : 0;
+  return result;
+}
+
+module.exports = mapCacheDelete;
+
+
+/***/ }),
+/* 117 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isKeyable = __webpack_require__(118);
+
+/**
+ * Gets the data for `map`.
+ *
+ * @private
+ * @param {Object} map The map to query.
+ * @param {string} key The reference key.
+ * @returns {*} Returns the map data.
+ */
+function getMapData(map, key) {
+  var data = map.__data__;
+  return isKeyable(key)
+    ? data[typeof key == 'string' ? 'string' : 'hash']
+    : data.map;
+}
+
+module.exports = getMapData;
+
+
+/***/ }),
+/* 118 */
+/***/ ((module) => {
+
+/**
+ * Checks if `value` is suitable for use as unique object key.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is suitable, else `false`.
+ */
+function isKeyable(value) {
+  var type = typeof value;
+  return (type == 'string' || type == 'number' || type == 'symbol' || type == 'boolean')
+    ? (value !== '__proto__')
+    : (value === null);
+}
+
+module.exports = isKeyable;
+
+
+/***/ }),
+/* 119 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var getMapData = __webpack_require__(117);
+
+/**
+ * Gets the map value for `key`.
+ *
+ * @private
+ * @name get
+ * @memberOf MapCache
+ * @param {string} key The key of the value to get.
+ * @returns {*} Returns the entry value.
+ */
+function mapCacheGet(key) {
+  return getMapData(this, key).get(key);
+}
+
+module.exports = mapCacheGet;
+
+
+/***/ }),
+/* 120 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var getMapData = __webpack_require__(117);
+
+/**
+ * Checks if a map value for `key` exists.
+ *
+ * @private
+ * @name has
+ * @memberOf MapCache
+ * @param {string} key The key of the entry to check.
+ * @returns {boolean} Returns `true` if an entry for `key` exists, else `false`.
+ */
+function mapCacheHas(key) {
+  return getMapData(this, key).has(key);
+}
+
+module.exports = mapCacheHas;
+
+
+/***/ }),
+/* 121 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var getMapData = __webpack_require__(117);
+
+/**
+ * Sets the map `key` to `value`.
+ *
+ * @private
+ * @name set
+ * @memberOf MapCache
+ * @param {string} key The key of the value to set.
+ * @param {*} value The value to set.
+ * @returns {Object} Returns the map cache instance.
+ */
+function mapCacheSet(key, value) {
+  var data = getMapData(this, key),
+      size = data.size;
+
+  data.set(key, value);
+  this.size += data.size == size ? 0 : 1;
+  return this;
+}
+
+module.exports = mapCacheSet;
+
+
+/***/ }),
+/* 122 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseIsEqualDeep = __webpack_require__(123),
+    isObjectLike = __webpack_require__(73);
 
 /**
  * The base implementation of `_.isEqual` which supports partial comparisons
@@ -7502,17 +6972,17 @@ module.exports = baseIsEqual;
 
 
 /***/ }),
-/* 135 */
+/* 123 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Stack = __webpack_require__(128),
-    equalArrays = __webpack_require__(136),
-    equalByTag = __webpack_require__(142),
-    equalObjects = __webpack_require__(146),
-    getTag = __webpack_require__(153),
-    isArray = __webpack_require__(21),
-    isBuffer = __webpack_require__(111),
-    isTypedArray = __webpack_require__(114);
+var Stack = __webpack_require__(92),
+    equalArrays = __webpack_require__(124),
+    equalByTag = __webpack_require__(130),
+    equalObjects = __webpack_require__(134),
+    getTag = __webpack_require__(141),
+    isArray = __webpack_require__(74),
+    isBuffer = __webpack_require__(75),
+    isTypedArray = __webpack_require__(78);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1;
@@ -7591,12 +7061,12 @@ module.exports = baseIsEqualDeep;
 
 
 /***/ }),
-/* 136 */
+/* 124 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var SetCache = __webpack_require__(137),
-    arraySome = __webpack_require__(140),
-    cacheHas = __webpack_require__(141);
+var SetCache = __webpack_require__(125),
+    arraySome = __webpack_require__(128),
+    cacheHas = __webpack_require__(129);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1,
@@ -7681,12 +7151,12 @@ module.exports = equalArrays;
 
 
 /***/ }),
-/* 137 */
+/* 125 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var MapCache = __webpack_require__(34),
-    setCacheAdd = __webpack_require__(138),
-    setCacheHas = __webpack_require__(139);
+var MapCache = __webpack_require__(107),
+    setCacheAdd = __webpack_require__(126),
+    setCacheHas = __webpack_require__(127);
 
 /**
  *
@@ -7714,7 +7184,7 @@ module.exports = SetCache;
 
 
 /***/ }),
-/* 138 */
+/* 126 */
 /***/ ((module) => {
 
 /** Used to stand-in for `undefined` hash values. */
@@ -7739,7 +7209,7 @@ module.exports = setCacheAdd;
 
 
 /***/ }),
-/* 139 */
+/* 127 */
 /***/ ((module) => {
 
 /**
@@ -7759,7 +7229,7 @@ module.exports = setCacheHas;
 
 
 /***/ }),
-/* 140 */
+/* 128 */
 /***/ ((module) => {
 
 /**
@@ -7788,7 +7258,7 @@ module.exports = arraySome;
 
 
 /***/ }),
-/* 141 */
+/* 129 */
 /***/ ((module) => {
 
 /**
@@ -7807,15 +7277,15 @@ module.exports = cacheHas;
 
 
 /***/ }),
-/* 142 */
+/* 130 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var Symbol = __webpack_require__(25),
-    Uint8Array = __webpack_require__(143),
-    eq = __webpack_require__(55),
-    equalArrays = __webpack_require__(136),
-    mapToArray = __webpack_require__(144),
-    setToArray = __webpack_require__(145);
+var Symbol = __webpack_require__(51),
+    Uint8Array = __webpack_require__(131),
+    eq = __webpack_require__(97),
+    equalArrays = __webpack_require__(124),
+    mapToArray = __webpack_require__(132),
+    setToArray = __webpack_require__(133);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1,
@@ -7925,10 +7395,10 @@ module.exports = equalByTag;
 
 
 /***/ }),
-/* 143 */
+/* 131 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var root = __webpack_require__(26);
+var root = __webpack_require__(52);
 
 /** Built-in value references. */
 var Uint8Array = root.Uint8Array;
@@ -7937,7 +7407,7 @@ module.exports = Uint8Array;
 
 
 /***/ }),
-/* 144 */
+/* 132 */
 /***/ ((module) => {
 
 /**
@@ -7961,7 +7431,7 @@ module.exports = mapToArray;
 
 
 /***/ }),
-/* 145 */
+/* 133 */
 /***/ ((module) => {
 
 /**
@@ -7985,10 +7455,10 @@ module.exports = setToArray;
 
 
 /***/ }),
-/* 146 */
+/* 134 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getAllKeys = __webpack_require__(147);
+var getAllKeys = __webpack_require__(135);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1;
@@ -8081,12 +7551,12 @@ module.exports = equalObjects;
 
 
 /***/ }),
-/* 147 */
+/* 135 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseGetAllKeys = __webpack_require__(148),
-    getSymbols = __webpack_require__(150),
-    keys = __webpack_require__(106);
+var baseGetAllKeys = __webpack_require__(136),
+    getSymbols = __webpack_require__(138),
+    keys = __webpack_require__(68);
 
 /**
  * Creates an array of own enumerable property names and symbols of `object`.
@@ -8103,11 +7573,11 @@ module.exports = getAllKeys;
 
 
 /***/ }),
-/* 148 */
+/* 136 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var arrayPush = __webpack_require__(149),
-    isArray = __webpack_require__(21);
+var arrayPush = __webpack_require__(137),
+    isArray = __webpack_require__(74);
 
 /**
  * The base implementation of `getAllKeys` and `getAllKeysIn` which uses
@@ -8129,7 +7599,7 @@ module.exports = baseGetAllKeys;
 
 
 /***/ }),
-/* 149 */
+/* 137 */
 /***/ ((module) => {
 
 /**
@@ -8155,11 +7625,11 @@ module.exports = arrayPush;
 
 
 /***/ }),
-/* 150 */
+/* 138 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var arrayFilter = __webpack_require__(151),
-    stubArray = __webpack_require__(152);
+var arrayFilter = __webpack_require__(139),
+    stubArray = __webpack_require__(140);
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -8191,7 +7661,7 @@ module.exports = getSymbols;
 
 
 /***/ }),
-/* 151 */
+/* 139 */
 /***/ ((module) => {
 
 /**
@@ -8222,7 +7692,7 @@ module.exports = arrayFilter;
 
 
 /***/ }),
-/* 152 */
+/* 140 */
 /***/ ((module) => {
 
 /**
@@ -8251,16 +7721,16 @@ module.exports = stubArray;
 
 
 /***/ }),
-/* 153 */
+/* 141 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var DataView = __webpack_require__(154),
-    Map = __webpack_require__(59),
-    Promise = __webpack_require__(155),
-    Set = __webpack_require__(156),
-    WeakMap = __webpack_require__(157),
-    baseGetTag = __webpack_require__(24),
-    toSource = __webpack_require__(45);
+var DataView = __webpack_require__(142),
+    Map = __webpack_require__(106),
+    Promise = __webpack_require__(143),
+    Set = __webpack_require__(144),
+    WeakMap = __webpack_require__(145),
+    baseGetTag = __webpack_require__(50),
+    toSource = __webpack_require__(59);
 
 /** `Object#toString` result references. */
 var mapTag = '[object Map]',
@@ -8315,11 +7785,11 @@ module.exports = getTag;
 
 
 /***/ }),
-/* 154 */
+/* 142 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getNative = __webpack_require__(39),
-    root = __webpack_require__(26);
+var getNative = __webpack_require__(47),
+    root = __webpack_require__(52);
 
 /* Built-in method references that are verified to be native. */
 var DataView = getNative(root, 'DataView');
@@ -8328,11 +7798,11 @@ module.exports = DataView;
 
 
 /***/ }),
-/* 155 */
+/* 143 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getNative = __webpack_require__(39),
-    root = __webpack_require__(26);
+var getNative = __webpack_require__(47),
+    root = __webpack_require__(52);
 
 /* Built-in method references that are verified to be native. */
 var Promise = getNative(root, 'Promise');
@@ -8341,11 +7811,11 @@ module.exports = Promise;
 
 
 /***/ }),
-/* 156 */
+/* 144 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getNative = __webpack_require__(39),
-    root = __webpack_require__(26);
+var getNative = __webpack_require__(47),
+    root = __webpack_require__(52);
 
 /* Built-in method references that are verified to be native. */
 var Set = getNative(root, 'Set');
@@ -8354,11 +7824,11 @@ module.exports = Set;
 
 
 /***/ }),
-/* 157 */
+/* 145 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var getNative = __webpack_require__(39),
-    root = __webpack_require__(26);
+var getNative = __webpack_require__(47),
+    root = __webpack_require__(52);
 
 /* Built-in method references that are verified to be native. */
 var WeakMap = getNative(root, 'WeakMap');
@@ -8367,11 +7837,11 @@ module.exports = WeakMap;
 
 
 /***/ }),
-/* 158 */
+/* 146 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var isStrictComparable = __webpack_require__(159),
-    keys = __webpack_require__(106);
+var isStrictComparable = __webpack_require__(147),
+    keys = __webpack_require__(68);
 
 /**
  * Gets the property names, values, and compare flags of `object`.
@@ -8397,10 +7867,10 @@ module.exports = getMatchData;
 
 
 /***/ }),
-/* 159 */
+/* 147 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var isObject = __webpack_require__(42);
+var isObject = __webpack_require__(56);
 
 /**
  * Checks if `value` is suitable for strict equality comparisons, i.e. `===`.
@@ -8418,7 +7888,7 @@ module.exports = isStrictComparable;
 
 
 /***/ }),
-/* 160 */
+/* 148 */
 /***/ ((module) => {
 
 /**
@@ -8444,16 +7914,16 @@ module.exports = matchesStrictComparable;
 
 
 /***/ }),
-/* 161 */
+/* 149 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseIsEqual = __webpack_require__(134),
-    get = __webpack_require__(18),
+var baseIsEqual = __webpack_require__(122),
+    get = __webpack_require__(150),
     hasIn = __webpack_require__(162),
-    isKey = __webpack_require__(22),
-    isStrictComparable = __webpack_require__(159),
-    matchesStrictComparable = __webpack_require__(160),
-    toKey = __webpack_require__(69);
+    isKey = __webpack_require__(153),
+    isStrictComparable = __webpack_require__(147),
+    matchesStrictComparable = __webpack_require__(148),
+    toKey = __webpack_require__(161);
 
 /** Used to compose bitmasks for value comparisons. */
 var COMPARE_PARTIAL_FLAG = 1,
@@ -8480,6 +7950,447 @@ function baseMatchesProperty(path, srcValue) {
 }
 
 module.exports = baseMatchesProperty;
+
+
+/***/ }),
+/* 150 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseGet = __webpack_require__(151);
+
+/**
+ * Gets the value at `path` of `object`. If the resolved value is
+ * `undefined`, the `defaultValue` is returned in its place.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.7.0
+ * @category Object
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path of the property to get.
+ * @param {*} [defaultValue] The value returned for `undefined` resolved values.
+ * @returns {*} Returns the resolved value.
+ * @example
+ *
+ * var object = { 'a': [{ 'b': { 'c': 3 } }] };
+ *
+ * _.get(object, 'a[0].b.c');
+ * // => 3
+ *
+ * _.get(object, ['a', '0', 'b', 'c']);
+ * // => 3
+ *
+ * _.get(object, 'a.b.c', 'default');
+ * // => 'default'
+ */
+function get(object, path, defaultValue) {
+  var result = object == null ? undefined : baseGet(object, path);
+  return result === undefined ? defaultValue : result;
+}
+
+module.exports = get;
+
+
+/***/ }),
+/* 151 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var castPath = __webpack_require__(152),
+    toKey = __webpack_require__(161);
+
+/**
+ * The base implementation of `_.get` without support for default values.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {Array|string} path The path of the property to get.
+ * @returns {*} Returns the resolved value.
+ */
+function baseGet(object, path) {
+  path = castPath(path, object);
+
+  var index = 0,
+      length = path.length;
+
+  while (object != null && index < length) {
+    object = object[toKey(path[index++])];
+  }
+  return (index && index == length) ? object : undefined;
+}
+
+module.exports = baseGet;
+
+
+/***/ }),
+/* 152 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isArray = __webpack_require__(74),
+    isKey = __webpack_require__(153),
+    stringToPath = __webpack_require__(155),
+    toString = __webpack_require__(158);
+
+/**
+ * Casts `value` to a path array if it's not one.
+ *
+ * @private
+ * @param {*} value The value to inspect.
+ * @param {Object} [object] The object to query keys on.
+ * @returns {Array} Returns the cast property path array.
+ */
+function castPath(value, object) {
+  if (isArray(value)) {
+    return value;
+  }
+  return isKey(value, object) ? [value] : stringToPath(toString(value));
+}
+
+module.exports = castPath;
+
+
+/***/ }),
+/* 153 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isArray = __webpack_require__(74),
+    isSymbol = __webpack_require__(154);
+
+/** Used to match property names within property paths. */
+var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/,
+    reIsPlainProp = /^\w*$/;
+
+/**
+ * Checks if `value` is a property name and not a property path.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {Object} [object] The object to query keys on.
+ * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
+ */
+function isKey(value, object) {
+  if (isArray(value)) {
+    return false;
+  }
+  var type = typeof value;
+  if (type == 'number' || type == 'symbol' || type == 'boolean' ||
+      value == null || isSymbol(value)) {
+    return true;
+  }
+  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) ||
+    (object != null && value in Object(object));
+}
+
+module.exports = isKey;
+
+
+/***/ }),
+/* 154 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseGetTag = __webpack_require__(50),
+    isObjectLike = __webpack_require__(73);
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+}
+
+module.exports = isSymbol;
+
+
+/***/ }),
+/* 155 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var memoizeCapped = __webpack_require__(156);
+
+/** Used to match property names within property paths. */
+var rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
+
+/** Used to match backslashes in property paths. */
+var reEscapeChar = /\\(\\)?/g;
+
+/**
+ * Converts `string` to a property path array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the property path array.
+ */
+var stringToPath = memoizeCapped(function(string) {
+  var result = [];
+  if (string.charCodeAt(0) === 46 /* . */) {
+    result.push('');
+  }
+  string.replace(rePropName, function(match, number, quote, subString) {
+    result.push(quote ? subString.replace(reEscapeChar, '$1') : (number || match));
+  });
+  return result;
+});
+
+module.exports = stringToPath;
+
+
+/***/ }),
+/* 156 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var memoize = __webpack_require__(157);
+
+/** Used as the maximum memoize cache size. */
+var MAX_MEMOIZE_SIZE = 500;
+
+/**
+ * A specialized version of `_.memoize` which clears the memoized function's
+ * cache when it exceeds `MAX_MEMOIZE_SIZE`.
+ *
+ * @private
+ * @param {Function} func The function to have its output memoized.
+ * @returns {Function} Returns the new memoized function.
+ */
+function memoizeCapped(func) {
+  var result = memoize(func, function(key) {
+    if (cache.size === MAX_MEMOIZE_SIZE) {
+      cache.clear();
+    }
+    return key;
+  });
+
+  var cache = result.cache;
+  return result;
+}
+
+module.exports = memoizeCapped;
+
+
+/***/ }),
+/* 157 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var MapCache = __webpack_require__(107);
+
+/** Error message constants. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/**
+ * Creates a function that memoizes the result of `func`. If `resolver` is
+ * provided, it determines the cache key for storing the result based on the
+ * arguments provided to the memoized function. By default, the first argument
+ * provided to the memoized function is used as the map cache key. The `func`
+ * is invoked with the `this` binding of the memoized function.
+ *
+ * **Note:** The cache is exposed as the `cache` property on the memoized
+ * function. Its creation may be customized by replacing the `_.memoize.Cache`
+ * constructor with one whose instances implement the
+ * [`Map`](http://ecma-international.org/ecma-262/7.0/#sec-properties-of-the-map-prototype-object)
+ * method interface of `clear`, `delete`, `get`, `has`, and `set`.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Function
+ * @param {Function} func The function to have its output memoized.
+ * @param {Function} [resolver] The function to resolve the cache key.
+ * @returns {Function} Returns the new memoized function.
+ * @example
+ *
+ * var object = { 'a': 1, 'b': 2 };
+ * var other = { 'c': 3, 'd': 4 };
+ *
+ * var values = _.memoize(_.values);
+ * values(object);
+ * // => [1, 2]
+ *
+ * values(other);
+ * // => [3, 4]
+ *
+ * object.a = 2;
+ * values(object);
+ * // => [1, 2]
+ *
+ * // Modify the result cache.
+ * values.cache.set(object, ['a', 'b']);
+ * values(object);
+ * // => ['a', 'b']
+ *
+ * // Replace `_.memoize.Cache`.
+ * _.memoize.Cache = WeakMap;
+ */
+function memoize(func, resolver) {
+  if (typeof func != 'function' || (resolver != null && typeof resolver != 'function')) {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  var memoized = function() {
+    var args = arguments,
+        key = resolver ? resolver.apply(this, args) : args[0],
+        cache = memoized.cache;
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    var result = func.apply(this, args);
+    memoized.cache = cache.set(key, result) || cache;
+    return result;
+  };
+  memoized.cache = new (memoize.Cache || MapCache);
+  return memoized;
+}
+
+// Expose `MapCache`.
+memoize.Cache = MapCache;
+
+module.exports = memoize;
+
+
+/***/ }),
+/* 158 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var baseToString = __webpack_require__(159);
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+module.exports = toString;
+
+
+/***/ }),
+/* 159 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var Symbol = __webpack_require__(51),
+    arrayMap = __webpack_require__(160),
+    isArray = __webpack_require__(74),
+    isSymbol = __webpack_require__(154);
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol ? Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+module.exports = baseToString;
+
+
+/***/ }),
+/* 160 */
+/***/ ((module) => {
+
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+module.exports = arrayMap;
+
+
+/***/ }),
+/* 161 */
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+var isSymbol = __webpack_require__(154);
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/**
+ * Converts `value` to a string key if it's not a string or symbol.
+ *
+ * @private
+ * @param {*} value The value to inspect.
+ * @returns {string|symbol} Returns the key.
+ */
+function toKey(value) {
+  if (typeof value == 'string' || isSymbol(value)) {
+    return value;
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+module.exports = toKey;
 
 
 /***/ }),
@@ -8545,12 +8456,12 @@ module.exports = baseHasIn;
 /* 164 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var castPath = __webpack_require__(20),
-    isArguments = __webpack_require__(109),
-    isArray = __webpack_require__(21),
-    isIndex = __webpack_require__(113),
-    isLength = __webpack_require__(116),
-    toKey = __webpack_require__(69);
+var castPath = __webpack_require__(152),
+    isArguments = __webpack_require__(71),
+    isArray = __webpack_require__(74),
+    isIndex = __webpack_require__(77),
+    isLength = __webpack_require__(80),
+    toKey = __webpack_require__(161);
 
 /**
  * Checks if `path` exists on `object`.
@@ -8619,8 +8530,8 @@ module.exports = identity;
 
 var baseProperty = __webpack_require__(167),
     basePropertyDeep = __webpack_require__(168),
-    isKey = __webpack_require__(22),
-    toKey = __webpack_require__(69);
+    isKey = __webpack_require__(153),
+    toKey = __webpack_require__(161);
 
 /**
  * Creates a function that returns the value at `path` of a given object.
@@ -8675,7 +8586,7 @@ module.exports = baseProperty;
 /* 168 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var baseGet = __webpack_require__(19);
+var baseGet = __webpack_require__(151);
 
 /**
  * A specialized version of `baseProperty` which supports deep paths.
@@ -8702,16 +8613,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ format)
 /* harmony export */ });
-/* harmony import */ var _isValid_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(183);
-/* harmony import */ var _locale_en_US_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(171);
-/* harmony import */ var _subMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(185);
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(182);
-/* harmony import */ var _lib_format_formatters_index_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(188);
-/* harmony import */ var _lib_format_longFormatters_index_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(187);
-/* harmony import */ var _lib_getTimezoneOffsetInMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(184);
-/* harmony import */ var _lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(200);
-/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(181);
+/* harmony import */ var _isValid_index_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(185);
+/* harmony import */ var _subMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(188);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(184);
+/* harmony import */ var _lib_format_formatters_index_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(191);
+/* harmony import */ var _lib_format_longFormatters_index_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(190);
+/* harmony import */ var _lib_getTimezoneOffsetInMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(187);
+/* harmony import */ var _lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(203);
+/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(183);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _lib_defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(171);
+/* harmony import */ var _lib_defaultLocale_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(172);
+
 
 
 
@@ -8749,7 +8662,7 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  * Return the formatted date string in the given format. The result may vary by locale.
  *
  * > ⚠️ Please note that the `format` tokens differ from Moment.js and other libraries.
- * > See: https://git.io/fxCyr
+ * > See: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  *
  * The characters wrapped between two single quotes characters (') are escaped.
  * Two single quotes in a row, whether inside or outside a quoted sequence, represent a 'real' single quote.
@@ -8828,28 +8741,28 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  * | Day of week (formatting)        | E..EEE  | Mon, Tue, Wed, ..., Sun           |       |
  * |                                 | EEEE    | Monday, Tuesday, ..., Sunday      | 2     |
  * |                                 | EEEEE   | M, T, W, T, F, S, S               |       |
- * |                                 | EEEEEE  | Mo, Tu, We, Th, Fr, Su, Sa        |       |
+ * |                                 | EEEEEE  | Mo, Tu, We, Th, Fr, Sa, Su        |       |
  * | ISO day of week (formatting)    | i       | 1, 2, 3, ..., 7                   | 7     |
  * |                                 | io      | 1st, 2nd, ..., 7th                | 7     |
  * |                                 | ii      | 01, 02, ..., 07                   | 7     |
  * |                                 | iii     | Mon, Tue, Wed, ..., Sun           | 7     |
  * |                                 | iiii    | Monday, Tuesday, ..., Sunday      | 2,7   |
  * |                                 | iiiii   | M, T, W, T, F, S, S               | 7     |
- * |                                 | iiiiii  | Mo, Tu, We, Th, Fr, Su, Sa        | 7     |
+ * |                                 | iiiiii  | Mo, Tu, We, Th, Fr, Sa, Su        | 7     |
  * | Local day of week (formatting)  | e       | 2, 3, 4, ..., 1                   |       |
  * |                                 | eo      | 2nd, 3rd, ..., 1st                | 7     |
  * |                                 | ee      | 02, 03, ..., 01                   |       |
  * |                                 | eee     | Mon, Tue, Wed, ..., Sun           |       |
  * |                                 | eeee    | Monday, Tuesday, ..., Sunday      | 2     |
  * |                                 | eeeee   | M, T, W, T, F, S, S               |       |
- * |                                 | eeeeee  | Mo, Tu, We, Th, Fr, Su, Sa        |       |
+ * |                                 | eeeeee  | Mo, Tu, We, Th, Fr, Sa, Su        |       |
  * | Local day of week (stand-alone) | c       | 2, 3, 4, ..., 1                   |       |
  * |                                 | co      | 2nd, 3rd, ..., 1st                | 7     |
  * |                                 | cc      | 02, 03, ..., 01                   |       |
  * |                                 | ccc     | Mon, Tue, Wed, ..., Sun           |       |
  * |                                 | cccc    | Monday, Tuesday, ..., Sunday      | 2     |
  * |                                 | ccccc   | M, T, W, T, F, S, S               |       |
- * |                                 | cccccc  | Mo, Tu, We, Th, Fr, Su, Sa        |       |
+ * |                                 | cccccc  | Mo, Tu, We, Th, Fr, Sa, Su        |       |
  * | AM, PM                          | a..aa   | AM, PM                            |       |
  * |                                 | aaa     | am, pm                            |       |
  * |                                 | aaaa    | a.m., p.m.                        | 2     |
@@ -8985,30 +8898,10 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  *    - `p`: long localized time
  *
  * 8. `YY` and `YYYY` tokens represent week-numbering years but they are often confused with years.
- *    You should enable `options.useAdditionalWeekYearTokens` to use them. See: https://git.io/fxCyr
+ *    You should enable `options.useAdditionalWeekYearTokens` to use them. See: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  *
- * 9. `D` and `DD` tokens represent days of the year but they are ofthen confused with days of the month.
- *    You should enable `options.useAdditionalDayOfYearTokens` to use them. See: https://git.io/fxCyr
- *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
- *
- * - The second argument is now required for the sake of explicitness.
- *
- *   ```javascript
- *   // Before v2.0.0
- *   format(new Date(2016, 0, 1))
- *
- *   // v2.0.0 onward
- *   format(new Date(2016, 0, 1), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
- *   ```
- *
- * - New format string API for `format` function
- *   which is based on [Unicode Technical Standard #35](https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table).
- *   See [this post](https://blog.date-fns.org/post/unicode-tokens-in-date-fns-v2-sreatyki91jg) for more details.
- *
- * - Characters are now escaped using single quote symbols (`'`) instead of square brackets.
+ * 9. `D` and `DD` tokens represent days of the year but they are often confused with days of the month.
+ *    You should enable `options.useAdditionalDayOfYearTokens` to use them. See: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  *
  * @param {Date|Number} date - the original date
  * @param {String} format - the string of tokens
@@ -9017,9 +8910,9 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  * @param {0|1|2|3|4|5|6} [options.weekStartsOn=0] - the index of the first day of the week (0 - Sunday)
  * @param {Number} [options.firstWeekContainsDate=1] - the day of January, which is
  * @param {Boolean} [options.useAdditionalWeekYearTokens=false] - if true, allows usage of the week-numbering year tokens `YY` and `YYYY`;
- *   see: https://git.io/fxCyr
+ *   see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  * @param {Boolean} [options.useAdditionalDayOfYearTokens=false] - if true, allows usage of the day of year tokens `D` and `DD`;
- *   see: https://git.io/fxCyr
+ *   see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  * @returns {String} the formatted date string
  * @throws {TypeError} 2 arguments required
  * @throws {RangeError} `date` must not be Invalid Date
@@ -9027,47 +8920,45 @@ var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
  * @throws {RangeError} `options.locale` must contain `formatLong` property
  * @throws {RangeError} `options.weekStartsOn` must be between 0 and 6
  * @throws {RangeError} `options.firstWeekContainsDate` must be between 1 and 7
- * @throws {RangeError} use `yyyy` instead of `YYYY` for formatting years using [format provided] to the input [input provided]; see: https://git.io/fxCyr
- * @throws {RangeError} use `yy` instead of `YY` for formatting years using [format provided] to the input [input provided]; see: https://git.io/fxCyr
- * @throws {RangeError} use `d` instead of `D` for formatting days of the month using [format provided] to the input [input provided]; see: https://git.io/fxCyr
- * @throws {RangeError} use `dd` instead of `DD` for formatting days of the month using [format provided] to the input [input provided]; see: https://git.io/fxCyr
+ * @throws {RangeError} use `yyyy` instead of `YYYY` for formatting years using [format provided] to the input [input provided]; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
+ * @throws {RangeError} use `yy` instead of `YY` for formatting years using [format provided] to the input [input provided]; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
+ * @throws {RangeError} use `d` instead of `D` for formatting days of the month using [format provided] to the input [input provided]; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
+ * @throws {RangeError} use `dd` instead of `DD` for formatting days of the month using [format provided] to the input [input provided]; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md
  * @throws {RangeError} format string contains an unescaped latin alphabet character
  *
  * @example
  * // Represent 11 February 2014 in middle-endian format:
- * var result = format(new Date(2014, 1, 11), 'MM/dd/yyyy')
+ * const result = format(new Date(2014, 1, 11), 'MM/dd/yyyy')
  * //=> '02/11/2014'
  *
  * @example
  * // Represent 2 July 2014 in Esperanto:
  * import { eoLocale } from 'date-fns/locale/eo'
- * var result = format(new Date(2014, 6, 2), "do 'de' MMMM yyyy", {
+ * const result = format(new Date(2014, 6, 2), "do 'de' MMMM yyyy", {
  *   locale: eoLocale
  * })
  * //=> '2-a de julio 2014'
  *
  * @example
  * // Escape string by single quote characters:
- * var result = format(new Date(2014, 6, 2, 15), "h 'o''clock'")
+ * const result = format(new Date(2014, 6, 2, 15), "h 'o''clock'")
  * //=> "3 o'clock"
  */
 
-function format(dirtyDate, dirtyFormatStr, dirtyOptions) {
+function format(dirtyDate, dirtyFormatStr, options) {
+  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _options$locale2, _options$locale2$opti, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _options$locale3, _options$locale3$opti, _defaultOptions$local3, _defaultOptions$local4;
+
   (0,_lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(2, arguments);
   var formatStr = String(dirtyFormatStr);
-  var options = dirtyOptions || {};
-  var locale = options.locale || _locale_en_US_index_js__WEBPACK_IMPORTED_MODULE_1__["default"];
-  var localeFirstWeekContainsDate = locale.options && locale.options.firstWeekContainsDate;
-  var defaultFirstWeekContainsDate = localeFirstWeekContainsDate == null ? 1 : (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(localeFirstWeekContainsDate);
-  var firstWeekContainsDate = options.firstWeekContainsDate == null ? defaultFirstWeekContainsDate : (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(options.firstWeekContainsDate); // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
+  var defaultOptions = (0,_lib_defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__.getDefaultOptions)();
+  var locale = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions.locale) !== null && _ref !== void 0 ? _ref : _lib_defaultLocale_index_js__WEBPACK_IMPORTED_MODULE_2__["default"];
+  var firstWeekContainsDate = (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale2 = options.locale) === null || _options$locale2 === void 0 ? void 0 : (_options$locale2$opti = _options$locale2.options) === null || _options$locale2$opti === void 0 ? void 0 : _options$locale2$opti.firstWeekContainsDate) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1); // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
 
   if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
     throw new RangeError('firstWeekContainsDate must be between 1 and 7 inclusively');
   }
 
-  var localeWeekStartsOn = locale.options && locale.options.weekStartsOn;
-  var defaultWeekStartsOn = localeWeekStartsOn == null ? 0 : (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(localeWeekStartsOn);
-  var weekStartsOn = options.weekStartsOn == null ? defaultWeekStartsOn : (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(options.weekStartsOn); // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
+  var weekStartsOn = (0,_lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale3 = options.locale) === null || _options$locale3 === void 0 ? void 0 : (_options$locale3$opti = _options$locale3.options) === null || _options$locale3$opti === void 0 ? void 0 : _options$locale3$opti.weekStartsOn) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0); // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
 
   if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
     throw new RangeError('weekStartsOn must be between 0 and 6 inclusively');
@@ -9081,17 +8972,17 @@ function format(dirtyDate, dirtyFormatStr, dirtyOptions) {
     throw new RangeError('locale must contain formatLong property');
   }
 
-  var originalDate = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(dirtyDate);
+  var originalDate = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(dirtyDate);
 
-  if (!(0,_isValid_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(originalDate)) {
+  if (!(0,_isValid_index_js__WEBPACK_IMPORTED_MODULE_5__["default"])(originalDate)) {
     throw new RangeError('Invalid time value');
   } // Convert the date in system timezone to the same date in UTC+00:00 timezone.
   // This ensures that when UTC functions will be implemented, locales will be compatible with them.
   // See an issue about UTC functions: https://github.com/date-fns/date-fns/issues/376
 
 
-  var timezoneOffset = (0,_lib_getTimezoneOffsetInMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_5__["default"])(originalDate);
-  var utcDate = (0,_subMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_6__["default"])(originalDate, timezoneOffset);
+  var timezoneOffset = (0,_lib_getTimezoneOffsetInMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_6__["default"])(originalDate);
+  var utcDate = (0,_subMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_7__["default"])(originalDate, timezoneOffset);
   var formatterOptions = {
     firstWeekContainsDate: firstWeekContainsDate,
     weekStartsOn: weekStartsOn,
@@ -9102,8 +8993,8 @@ function format(dirtyDate, dirtyFormatStr, dirtyOptions) {
     var firstCharacter = substring[0];
 
     if (firstCharacter === 'p' || firstCharacter === 'P') {
-      var longFormatter = _lib_format_longFormatters_index_js__WEBPACK_IMPORTED_MODULE_7__["default"][firstCharacter];
-      return longFormatter(substring, locale.formatLong, formatterOptions);
+      var longFormatter = _lib_format_longFormatters_index_js__WEBPACK_IMPORTED_MODULE_8__["default"][firstCharacter];
+      return longFormatter(substring, locale.formatLong);
     }
 
     return substring;
@@ -9119,15 +9010,15 @@ function format(dirtyDate, dirtyFormatStr, dirtyOptions) {
       return cleanEscapedString(substring);
     }
 
-    var formatter = _lib_format_formatters_index_js__WEBPACK_IMPORTED_MODULE_8__["default"][firstCharacter];
+    var formatter = _lib_format_formatters_index_js__WEBPACK_IMPORTED_MODULE_9__["default"][firstCharacter];
 
     if (formatter) {
-      if (!options.useAdditionalWeekYearTokens && (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_9__.isProtectedWeekYearToken)(substring)) {
-        (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_9__.throwProtectedError)(substring, dirtyFormatStr, dirtyDate);
+      if (!(options !== null && options !== void 0 && options.useAdditionalWeekYearTokens) && (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_10__.isProtectedWeekYearToken)(substring)) {
+        (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_10__.throwProtectedError)(substring, dirtyFormatStr, String(dirtyDate));
       }
 
-      if (!options.useAdditionalDayOfYearTokens && (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_9__.isProtectedDayOfYearToken)(substring)) {
-        (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_9__.throwProtectedError)(substring, dirtyFormatStr, dirtyDate);
+      if (!(options !== null && options !== void 0 && options.useAdditionalDayOfYearTokens) && (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_10__.isProtectedDayOfYearToken)(substring)) {
+        (0,_lib_protectedTokens_index_js__WEBPACK_IMPORTED_MODULE_10__.throwProtectedError)(substring, dirtyFormatStr, String(dirtyDate));
       }
 
       return formatter(utcDate, substring, locale.localize, formatterOptions);
@@ -9143,7 +9034,13 @@ function format(dirtyDate, dirtyFormatStr, dirtyOptions) {
 }
 
 function cleanEscapedString(input) {
-  return input.match(escapedStringRegExp)[1].replace(doubleQuoteRegExp, "'");
+  var matched = input.match(escapedStringRegExp);
+
+  if (!matched) {
+    return input;
+  }
+
+  return matched[1].replace(doubleQuoteRegExp, "'");
 }
 
 /***/ }),
@@ -9168,13 +9065,45 @@ function requiredArgs(required, args) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "getDefaultOptions": () => (/* binding */ getDefaultOptions),
+/* harmony export */   "setDefaultOptions": () => (/* binding */ setDefaultOptions)
+/* harmony export */ });
+var defaultOptions = {};
+function getDefaultOptions() {
+  return defaultOptions;
+}
+function setDefaultOptions(newOptions) {
+  defaultOptions = newOptions;
+}
+
+/***/ }),
+/* 172 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lib_formatDistance_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(172);
-/* harmony import */ var _lib_formatLong_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(173);
-/* harmony import */ var _lib_formatRelative_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(175);
-/* harmony import */ var _lib_localize_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(176);
-/* harmony import */ var _lib_match_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(178);
+/* harmony import */ var _locale_en_US_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(173);
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_locale_en_US_index_js__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/***/ }),
+/* 173 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _lib_formatDistance_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(174);
+/* harmony import */ var _lib_formatLong_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(175);
+/* harmony import */ var _lib_formatRelative_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(177);
+/* harmony import */ var _lib_localize_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(178);
+/* harmony import */ var _lib_match_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(180);
+
 
 
 
@@ -9189,7 +9118,6 @@ __webpack_require__.r(__webpack_exports__);
  * @author Sasha Koss [@kossnocorp]{@link https://github.com/kossnocorp}
  * @author Lesha Koss [@leshakoss]{@link https://github.com/leshakoss}
  */
-
 var locale = {
   code: 'en-US',
   formatDistance: _lib_formatDistance_index_js__WEBPACK_IMPORTED_MODULE_0__["default"],
@@ -9207,13 +9135,13 @@ var locale = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (locale);
 
 /***/ }),
-/* 172 */
+/* 174 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ formatDistance)
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 var formatDistanceLocale = {
   lessThanXSeconds: {
@@ -9278,20 +9206,21 @@ var formatDistanceLocale = {
     other: 'almost {{count}} years'
   }
 };
-function formatDistance(token, count, options) {
-  options = options || {};
-  var result;
 
-  if (typeof formatDistanceLocale[token] === 'string') {
-    result = formatDistanceLocale[token];
+var formatDistance = function formatDistance(token, count, options) {
+  var result;
+  var tokenValue = formatDistanceLocale[token];
+
+  if (typeof tokenValue === 'string') {
+    result = tokenValue;
   } else if (count === 1) {
-    result = formatDistanceLocale[token].one;
+    result = tokenValue.one;
   } else {
-    result = formatDistanceLocale[token].other.replace('{{count}}', count);
+    result = tokenValue.other.replace('{{count}}', count.toString());
   }
 
-  if (options.addSuffix) {
-    if (options.comparison > 0) {
+  if (options !== null && options !== void 0 && options.addSuffix) {
+    if (options.comparison && options.comparison > 0) {
       return 'in ' + result;
     } else {
       return result + ' ago';
@@ -9299,10 +9228,12 @@ function formatDistance(token, count, options) {
   }
 
   return result;
-}
+};
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatDistance);
 
 /***/ }),
-/* 173 */
+/* 175 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9310,7 +9241,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lib_buildFormatLongFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(174);
+/* harmony import */ var _lib_buildFormatLongFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(176);
 
 var dateFormats = {
   full: 'EEEE, MMMM do, y',
@@ -9347,7 +9278,7 @@ var formatLong = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatLong);
 
 /***/ }),
-/* 174 */
+/* 176 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9356,8 +9287,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ buildFormatLongFn)
 /* harmony export */ });
 function buildFormatLongFn(args) {
-  return function (dirtyOptions) {
-    var options = dirtyOptions || {};
+  return function () {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    // TODO: Remove String()
     var width = options.width ? String(options.width) : args.defaultWidth;
     var format = args.formats[width] || args.formats[args.defaultWidth];
     return format;
@@ -9365,13 +9297,13 @@ function buildFormatLongFn(args) {
 }
 
 /***/ }),
-/* 175 */
+/* 177 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ formatRelative)
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 var formatRelativeLocale = {
   lastWeek: "'last' eeee 'at' p",
@@ -9381,12 +9313,15 @@ var formatRelativeLocale = {
   nextWeek: "eeee 'at' p",
   other: 'P'
 };
-function formatRelative(token, _date, _baseDate, _options) {
+
+var formatRelative = function formatRelative(token, _date, _baseDate, _options) {
   return formatRelativeLocale[token];
-}
+};
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatRelative);
 
 /***/ }),
-/* 176 */
+/* 178 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9394,7 +9329,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lib_buildLocalizeFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(177);
+/* harmony import */ var _lib_buildLocalizeFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(179);
 
 var eraValues = {
   narrow: ['B', 'A'],
@@ -9404,12 +9339,12 @@ var eraValues = {
 var quarterValues = {
   narrow: ['1', '2', '3', '4'],
   abbreviated: ['Q1', 'Q2', 'Q3', 'Q4'],
-  wide: ['1st quarter', '2nd quarter', '3rd quarter', '4th quarter'] // Note: in English, the names of days of the week and months are capitalized.
-  // If you are making a new locale based on this one, check if the same is true for the language you're working on.
-  // Generally, formatted dates should look like they are in the middle of a sentence,
-  // e.g. in Spanish language the weekdays and months should be in the lowercase.
+  wide: ['1st quarter', '2nd quarter', '3rd quarter', '4th quarter']
+}; // Note: in English, the names of days of the week and months are capitalized.
+// If you are making a new locale based on this one, check if the same is true for the language you're working on.
+// Generally, formatted dates should look like they are in the middle of a sentence,
+// e.g. in Spanish language the weekdays and months should be in the lowercase.
 
-};
 var monthValues = {
   narrow: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'],
   abbreviated: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -9486,16 +9421,13 @@ var formattingDayPeriodValues = {
   }
 };
 
-function ordinalNumber(dirtyNumber, _dirtyOptions) {
+var ordinalNumber = function ordinalNumber(dirtyNumber, _options) {
   var number = Number(dirtyNumber); // If ordinal numbers depend on context, for example,
   // if they are different for different grammatical genders,
-  // use `options.unit`:
+  // use `options.unit`.
   //
-  //   var options = dirtyOptions || {}
-  //   var unit = String(options.unit)
-  //
-  // where `unit` can be 'year', 'quarter', 'month', 'week', 'date', 'dayOfYear',
-  // 'day', 'hour', 'minute', 'second'
+  // `unit` can be 'year', 'quarter', 'month', 'week', 'date', 'dayOfYear',
+  // 'day', 'hour', 'minute', 'second'.
 
   var rem100 = number % 100;
 
@@ -9513,7 +9445,7 @@ function ordinalNumber(dirtyNumber, _dirtyOptions) {
   }
 
   return number + 'th';
-}
+};
 
 var localize = {
   ordinalNumber: ordinalNumber,
@@ -9524,8 +9456,8 @@ var localize = {
   quarter: (0,_lib_buildLocalizeFn_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])({
     values: quarterValues,
     defaultWidth: 'wide',
-    argumentCallback: function (quarter) {
-      return Number(quarter) - 1;
+    argumentCallback: function argumentCallback(quarter) {
+      return quarter - 1;
     }
   }),
   month: (0,_lib_buildLocalizeFn_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])({
@@ -9546,7 +9478,7 @@ var localize = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (localize);
 
 /***/ }),
-/* 177 */
+/* 179 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9555,30 +9487,30 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ buildLocalizeFn)
 /* harmony export */ });
 function buildLocalizeFn(args) {
-  return function (dirtyIndex, dirtyOptions) {
-    var options = dirtyOptions || {};
-    var context = options.context ? String(options.context) : 'standalone';
+  return function (dirtyIndex, options) {
+    var context = options !== null && options !== void 0 && options.context ? String(options.context) : 'standalone';
     var valuesArray;
 
     if (context === 'formatting' && args.formattingValues) {
       var defaultWidth = args.defaultFormattingWidth || args.defaultWidth;
-      var width = options.width ? String(options.width) : defaultWidth;
+      var width = options !== null && options !== void 0 && options.width ? String(options.width) : defaultWidth;
       valuesArray = args.formattingValues[width] || args.formattingValues[defaultWidth];
     } else {
       var _defaultWidth = args.defaultWidth;
 
-      var _width = options.width ? String(options.width) : args.defaultWidth;
+      var _width = options !== null && options !== void 0 && options.width ? String(options.width) : args.defaultWidth;
 
       valuesArray = args.values[_width] || args.values[_defaultWidth];
     }
 
-    var index = args.argumentCallback ? args.argumentCallback(dirtyIndex) : dirtyIndex;
+    var index = args.argumentCallback ? args.argumentCallback(dirtyIndex) : dirtyIndex; // @ts-ignore: For some reason TypeScript just don't want to match it, no matter how hard we try. I challenge you to try to remove it!
+
     return valuesArray[index];
   };
 }
 
 /***/ }),
-/* 178 */
+/* 180 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9586,8 +9518,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lib_buildMatchPatternFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(179);
-/* harmony import */ var _lib_buildMatchFn_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(180);
+/* harmony import */ var _lib_buildMatchFn_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _lib_buildMatchPatternFn_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(181);
 
 
 var matchOrdinalNumberPattern = /^(\d+)(th|st|nd|rd)?/i;
@@ -9647,7 +9579,7 @@ var match = {
   ordinalNumber: (0,_lib_buildMatchPatternFn_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])({
     matchPattern: matchOrdinalNumberPattern,
     parsePattern: parseOrdinalNumberPattern,
-    valueCallback: function (value) {
+    valueCallback: function valueCallback(value) {
       return parseInt(value, 10);
     }
   }),
@@ -9662,7 +9594,7 @@ var match = {
     defaultMatchWidth: 'wide',
     parsePatterns: parseQuarterPatterns,
     defaultParseWidth: 'any',
-    valueCallback: function (index) {
+    valueCallback: function valueCallback(index) {
       return index + 1;
     }
   }),
@@ -9688,7 +9620,7 @@ var match = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (match);
 
 /***/ }),
-/* 179 */
+/* 181 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9697,33 +9629,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ buildMatchPatternFn)
 /* harmony export */ });
 function buildMatchPatternFn(args) {
-  return function (dirtyString, dirtyOptions) {
-    var string = String(dirtyString);
-    var options = dirtyOptions || {};
+  return function (string) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var matchResult = string.match(args.matchPattern);
-
-    if (!matchResult) {
-      return null;
-    }
-
+    if (!matchResult) return null;
     var matchedString = matchResult[0];
     var parseResult = string.match(args.parsePattern);
-
-    if (!parseResult) {
-      return null;
-    }
-
+    if (!parseResult) return null;
     var value = args.valueCallback ? args.valueCallback(parseResult[0]) : parseResult[0];
     value = options.valueCallback ? options.valueCallback(value) : value;
+    var rest = string.slice(matchedString.length);
     return {
       value: value,
-      rest: string.slice(matchedString.length)
+      rest: rest
     };
   };
 }
 
 /***/ }),
-/* 180 */
+/* 182 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9732,9 +9656,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ buildMatchFn)
 /* harmony export */ });
 function buildMatchFn(args) {
-  return function (dirtyString, dirtyOptions) {
-    var string = String(dirtyString);
-    var options = dirtyOptions || {};
+  return function (string) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var width = options.width;
     var matchPattern = width && args.matchPatterns[width] || args.matchPatterns[args.defaultMatchWidth];
     var matchResult = string.match(matchPattern);
@@ -9745,23 +9668,18 @@ function buildMatchFn(args) {
 
     var matchedString = matchResult[0];
     var parsePatterns = width && args.parsePatterns[width] || args.parsePatterns[args.defaultParseWidth];
+    var key = Array.isArray(parsePatterns) ? findIndex(parsePatterns, function (pattern) {
+      return pattern.test(matchedString);
+    }) : findKey(parsePatterns, function (pattern) {
+      return pattern.test(matchedString);
+    });
     var value;
-
-    if (Object.prototype.toString.call(parsePatterns) === '[object Array]') {
-      value = findIndex(parsePatterns, function (pattern) {
-        return pattern.test(matchedString);
-      });
-    } else {
-      value = findKey(parsePatterns, function (pattern) {
-        return pattern.test(matchedString);
-      });
-    }
-
-    value = args.valueCallback ? args.valueCallback(value) : value;
+    value = args.valueCallback ? args.valueCallback(key) : key;
     value = options.valueCallback ? options.valueCallback(value) : value;
+    var rest = string.slice(matchedString.length);
     return {
       value: value,
-      rest: string.slice(matchedString.length)
+      rest: rest
     };
   };
 }
@@ -9772,6 +9690,8 @@ function findKey(object, predicate) {
       return key;
     }
   }
+
+  return undefined;
 }
 
 function findIndex(array, predicate) {
@@ -9780,10 +9700,12 @@ function findIndex(array, predicate) {
       return key;
     }
   }
+
+  return undefined;
 }
 
 /***/ }),
-/* 181 */
+/* 183 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9806,7 +9728,7 @@ function toInteger(dirtyNumber) {
 }
 
 /***/ }),
-/* 182 */
+/* 184 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9815,6 +9737,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ toDate)
 /* harmony export */ });
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 
 /**
  * @name toDate
@@ -9851,7 +9775,7 @@ function toDate(argument) {
   (0,_lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
   var argStr = Object.prototype.toString.call(argument); // Clone the date
 
-  if (argument instanceof Date || typeof argument === 'object' && argStr === '[object Date]') {
+  if (argument instanceof Date || _typeof(argument) === 'object' && argStr === '[object Date]') {
     // Prevent the date to lose the milliseconds when passed to new Date() in IE10
     return new Date(argument.getTime());
   } else if (typeof argument === 'number' || argStr === '[object Number]') {
@@ -9859,7 +9783,7 @@ function toDate(argument) {
   } else {
     if ((typeof argument === 'string' || argStr === '[object String]') && typeof console !== 'undefined') {
       // eslint-disable-next-line no-console
-      console.warn("Starting with v2.0.0-beta.1 date-fns doesn't accept strings as date arguments. Please use `parseISO` to parse strings. See: https://git.io/fjule"); // eslint-disable-next-line no-console
+      console.warn("Starting with v2.0.0-beta.1 date-fns doesn't accept strings as date arguments. Please use `parseISO` to parse strings. See: https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#string-arguments"); // eslint-disable-next-line no-console
 
       console.warn(new Error().stack);
     }
@@ -9869,7 +9793,7 @@ function toDate(argument) {
 }
 
 /***/ }),
-/* 183 */
+/* 185 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9877,8 +9801,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ isValid)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _isDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(186);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(184);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+
 
 
 /**
@@ -9893,60 +9819,90 @@ __webpack_require__.r(__webpack_exports__);
  *
  * Time value of Date: http://es5.github.io/#x15.9.1.1
  *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
- *
- * - Now `isValid` doesn't throw an exception
- *   if the first argument is not an instance of Date.
- *   Instead, argument is converted beforehand using `toDate`.
- *
- *   Examples:
- *
- *   | `isValid` argument        | Before v2.0.0 | v2.0.0 onward |
- *   |---------------------------|---------------|---------------|
- *   | `new Date()`              | `true`        | `true`        |
- *   | `new Date('2016-01-01')`  | `true`        | `true`        |
- *   | `new Date('')`            | `false`       | `false`       |
- *   | `new Date(1488370835081)` | `true`        | `true`        |
- *   | `new Date(NaN)`           | `false`       | `false`       |
- *   | `'2016-01-01'`            | `TypeError`   | `false`       |
- *   | `''`                      | `TypeError`   | `false`       |
- *   | `1488370835081`           | `TypeError`   | `true`        |
- *   | `NaN`                     | `TypeError`   | `false`       |
- *
- *   We introduce this change to make *date-fns* consistent with ECMAScript behavior
- *   that try to coerce arguments to the expected type
- *   (which is also the case with other *date-fns* functions).
- *
  * @param {*} date - the date to check
  * @returns {Boolean} the date is valid
  * @throws {TypeError} 1 argument required
  *
  * @example
  * // For the valid date:
- * var result = isValid(new Date(2014, 1, 31))
+ * const result = isValid(new Date(2014, 1, 31))
  * //=> true
  *
  * @example
  * // For the value, convertable into a date:
- * var result = isValid(1393804800000)
+ * const result = isValid(1393804800000)
  * //=> true
  *
  * @example
  * // For the invalid date:
- * var result = isValid(new Date(''))
+ * const result = isValid(new Date(''))
  * //=> false
  */
 
 function isValid(dirtyDate) {
   (0,_lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
-  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate);
-  return !isNaN(date);
+
+  if (!(0,_isDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate) && typeof dirtyDate !== 'number') {
+    return false;
+  }
+
+  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(dirtyDate);
+  return !isNaN(Number(date));
 }
 
 /***/ }),
-/* 184 */
+/* 186 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ isDate)
+/* harmony export */ });
+/* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+
+/**
+ * @name isDate
+ * @category Common Helpers
+ * @summary Is the given value a date?
+ *
+ * @description
+ * Returns true if the given value is an instance of Date. The function works for dates transferred across iframes.
+ *
+ * @param {*} value - the value to check
+ * @returns {boolean} true if the given value is a date
+ * @throws {TypeError} 1 arguments required
+ *
+ * @example
+ * // For a valid date:
+ * const result = isDate(new Date())
+ * //=> true
+ *
+ * @example
+ * // For an invalid date:
+ * const result = isDate(new Date(NaN))
+ * //=> true
+ *
+ * @example
+ * // For some value:
+ * const result = isDate('2014-02-31')
+ * //=> false
+ *
+ * @example
+ * // For an object:
+ * const result = isDate({})
+ * //=> false
+ */
+
+function isDate(value) {
+  (0,_lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
+  return value instanceof Date || _typeof(value) === 'object' && Object.prototype.toString.call(value) === '[object Date]';
+}
+
+/***/ }),
+/* 187 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9972,7 +9928,7 @@ function getTimezoneOffsetInMilliseconds(date) {
 }
 
 /***/ }),
-/* 185 */
+/* 188 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -9980,9 +9936,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ subMilliseconds)
 /* harmony export */ });
-/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(181);
-/* harmony import */ var _addMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(186);
+/* harmony import */ var _addMilliseconds_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(189);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(183);
 
 
 
@@ -9993,10 +9949,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @description
  * Subtract the specified number of milliseconds from the given date.
- *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
  *
  * @param {Date|Number} date - the date to be changed
  * @param {Number} amount - the amount of milliseconds to be subtracted. Positive decimals will be rounded using `Math.floor`, decimals less than zero will be rounded using `Math.ceil`.
@@ -10016,7 +9968,7 @@ function subMilliseconds(dirtyDate, dirtyAmount) {
 }
 
 /***/ }),
-/* 186 */
+/* 189 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -10024,8 +9976,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ addMilliseconds)
 /* harmony export */ });
-/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(181);
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(183);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
@@ -10037,10 +9989,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @description
  * Add the specified number of milliseconds to the given date.
- *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
  *
  * @param {Date|Number} date - the date to be changed
  * @param {Number} amount - the amount of milliseconds to be added. Positive decimals will be rounded using `Math.floor`, decimals less than zero will be rounded using `Math.ceil`.
@@ -10061,7 +10009,7 @@ function addMilliseconds(dirtyDate, dirtyAmount) {
 }
 
 /***/ }),
-/* 187 */
+/* 190 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -10069,7 +10017,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-function dateLongFormatter(pattern, formatLong) {
+var dateLongFormatter = function dateLongFormatter(pattern, formatLong) {
   switch (pattern) {
     case 'P':
       return formatLong.date({
@@ -10092,9 +10040,9 @@ function dateLongFormatter(pattern, formatLong) {
         width: 'full'
       });
   }
-}
+};
 
-function timeLongFormatter(pattern, formatLong) {
+var timeLongFormatter = function timeLongFormatter(pattern, formatLong) {
   switch (pattern) {
     case 'p':
       return formatLong.time({
@@ -10117,10 +10065,10 @@ function timeLongFormatter(pattern, formatLong) {
         width: 'full'
       });
   }
-}
+};
 
-function dateTimeLongFormatter(pattern, formatLong) {
-  var matchResult = pattern.match(/(P+)(p+)?/);
+var dateTimeLongFormatter = function dateTimeLongFormatter(pattern, formatLong) {
+  var matchResult = pattern.match(/(P+)(p+)?/) || [];
   var datePattern = matchResult[1];
   var timePattern = matchResult[2];
 
@@ -10158,7 +10106,7 @@ function dateTimeLongFormatter(pattern, formatLong) {
   }
 
   return dateTimeFormat.replace('{{date}}', dateLongFormatter(datePattern, formatLong)).replace('{{time}}', timeLongFormatter(timePattern, formatLong));
-}
+};
 
 var longFormatters = {
   p: timeLongFormatter,
@@ -10167,7 +10115,7 @@ var longFormatters = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (longFormatters);
 
 /***/ }),
-/* 188 */
+/* 191 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -10175,13 +10123,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(189);
-/* harmony import */ var _lib_getUTCDayOfYear_index_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(199);
-/* harmony import */ var _lib_getUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(197);
-/* harmony import */ var _lib_getUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(193);
-/* harmony import */ var _lib_getUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(195);
-/* harmony import */ var _lib_getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(191);
-/* harmony import */ var _addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(190);
+/* harmony import */ var _lib_getUTCDayOfYear_index_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(202);
+/* harmony import */ var _lib_getUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(200);
+/* harmony import */ var _lib_getUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(196);
+/* harmony import */ var _lib_getUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(198);
+/* harmony import */ var _lib_getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(194);
+/* harmony import */ var _addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(193);
+/* harmony import */ var _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(192);
 
 
 
@@ -10198,56 +10146,56 @@ var dayPeriodEnum = {
   afternoon: 'afternoon',
   evening: 'evening',
   night: 'night'
-  /*
-   * |     | Unit                           |     | Unit                           |
-   * |-----|--------------------------------|-----|--------------------------------|
-   * |  a  | AM, PM                         |  A* | Milliseconds in day            |
-   * |  b  | AM, PM, noon, midnight         |  B  | Flexible day period            |
-   * |  c  | Stand-alone local day of week  |  C* | Localized hour w/ day period   |
-   * |  d  | Day of month                   |  D  | Day of year                    |
-   * |  e  | Local day of week              |  E  | Day of week                    |
-   * |  f  |                                |  F* | Day of week in month           |
-   * |  g* | Modified Julian day            |  G  | Era                            |
-   * |  h  | Hour [1-12]                    |  H  | Hour [0-23]                    |
-   * |  i! | ISO day of week                |  I! | ISO week of year               |
-   * |  j* | Localized hour w/ day period   |  J* | Localized hour w/o day period  |
-   * |  k  | Hour [1-24]                    |  K  | Hour [0-11]                    |
-   * |  l* | (deprecated)                   |  L  | Stand-alone month              |
-   * |  m  | Minute                         |  M  | Month                          |
-   * |  n  |                                |  N  |                                |
-   * |  o! | Ordinal number modifier        |  O  | Timezone (GMT)                 |
-   * |  p! | Long localized time            |  P! | Long localized date            |
-   * |  q  | Stand-alone quarter            |  Q  | Quarter                        |
-   * |  r* | Related Gregorian year         |  R! | ISO week-numbering year        |
-   * |  s  | Second                         |  S  | Fraction of second             |
-   * |  t! | Seconds timestamp              |  T! | Milliseconds timestamp         |
-   * |  u  | Extended year                  |  U* | Cyclic year                    |
-   * |  v* | Timezone (generic non-locat.)  |  V* | Timezone (location)            |
-   * |  w  | Local week of year             |  W* | Week of month                  |
-   * |  x  | Timezone (ISO-8601 w/o Z)      |  X  | Timezone (ISO-8601)            |
-   * |  y  | Year (abs)                     |  Y  | Local week-numbering year      |
-   * |  z  | Timezone (specific non-locat.) |  Z* | Timezone (aliases)             |
-   *
-   * Letters marked by * are not implemented but reserved by Unicode standard.
-   *
-   * Letters marked by ! are non-standard, but implemented by date-fns:
-   * - `o` modifies the previous token to turn it into an ordinal (see `format` docs)
-   * - `i` is ISO day of week. For `i` and `ii` is returns numeric ISO week days,
-   *   i.e. 7 for Sunday, 1 for Monday, etc.
-   * - `I` is ISO week of year, as opposed to `w` which is local week of year.
-   * - `R` is ISO week-numbering year, as opposed to `Y` which is local week-numbering year.
-   *   `R` is supposed to be used in conjunction with `I` and `i`
-   *   for universal ISO week-numbering date, whereas
-   *   `Y` is supposed to be used in conjunction with `w` and `e`
-   *   for week-numbering date specific to the locale.
-   * - `P` is long localized date format
-   * - `p` is long localized time format
-   */
-
 };
+
+/*
+ * |     | Unit                           |     | Unit                           |
+ * |-----|--------------------------------|-----|--------------------------------|
+ * |  a  | AM, PM                         |  A* | Milliseconds in day            |
+ * |  b  | AM, PM, noon, midnight         |  B  | Flexible day period            |
+ * |  c  | Stand-alone local day of week  |  C* | Localized hour w/ day period   |
+ * |  d  | Day of month                   |  D  | Day of year                    |
+ * |  e  | Local day of week              |  E  | Day of week                    |
+ * |  f  |                                |  F* | Day of week in month           |
+ * |  g* | Modified Julian day            |  G  | Era                            |
+ * |  h  | Hour [1-12]                    |  H  | Hour [0-23]                    |
+ * |  i! | ISO day of week                |  I! | ISO week of year               |
+ * |  j* | Localized hour w/ day period   |  J* | Localized hour w/o day period  |
+ * |  k  | Hour [1-24]                    |  K  | Hour [0-11]                    |
+ * |  l* | (deprecated)                   |  L  | Stand-alone month              |
+ * |  m  | Minute                         |  M  | Month                          |
+ * |  n  |                                |  N  |                                |
+ * |  o! | Ordinal number modifier        |  O  | Timezone (GMT)                 |
+ * |  p! | Long localized time            |  P! | Long localized date            |
+ * |  q  | Stand-alone quarter            |  Q  | Quarter                        |
+ * |  r* | Related Gregorian year         |  R! | ISO week-numbering year        |
+ * |  s  | Second                         |  S  | Fraction of second             |
+ * |  t! | Seconds timestamp              |  T! | Milliseconds timestamp         |
+ * |  u  | Extended year                  |  U* | Cyclic year                    |
+ * |  v* | Timezone (generic non-locat.)  |  V* | Timezone (location)            |
+ * |  w  | Local week of year             |  W* | Week of month                  |
+ * |  x  | Timezone (ISO-8601 w/o Z)      |  X  | Timezone (ISO-8601)            |
+ * |  y  | Year (abs)                     |  Y  | Local week-numbering year      |
+ * |  z  | Timezone (specific non-locat.) |  Z* | Timezone (aliases)             |
+ *
+ * Letters marked by * are not implemented but reserved by Unicode standard.
+ *
+ * Letters marked by ! are non-standard, but implemented by date-fns:
+ * - `o` modifies the previous token to turn it into an ordinal (see `format` docs)
+ * - `i` is ISO day of week. For `i` and `ii` is returns numeric ISO week days,
+ *   i.e. 7 for Sunday, 1 for Monday, etc.
+ * - `I` is ISO week of year, as opposed to `w` which is local week of year.
+ * - `R` is ISO week-numbering year, as opposed to `Y` which is local week-numbering year.
+ *   `R` is supposed to be used in conjunction with `I` and `i`
+ *   for universal ISO week-numbering date, whereas
+ *   `Y` is supposed to be used in conjunction with `w` and `e`
+ *   for week-numbering date specific to the locale.
+ * - `P` is long localized date format
+ * - `p` is long localized time format
+ */
 var formatters = {
   // Era
-  G: function (date, token, localize) {
+  G: function G(date, token, localize) {
     var era = date.getUTCFullYear() > 0 ? 1 : 0;
 
     switch (token) {
@@ -10274,7 +10222,7 @@ var formatters = {
     }
   },
   // Year
-  y: function (date, token, localize) {
+  y: function y(date, token, localize) {
     // Ordinal number
     if (token === 'yo') {
       var signedYear = date.getUTCFullYear(); // Returns 1 for 1 BC (which is year 0 in JavaScript)
@@ -10288,7 +10236,7 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].y(date, token);
   },
   // Local week-numbering year
-  Y: function (date, token, localize, options) {
+  Y: function Y(date, token, localize, options) {
     var signedWeekYear = (0,_lib_getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(date, options); // Returns 1 for 1 BC (which is year 0 in JavaScript)
 
     var weekYear = signedWeekYear > 0 ? signedWeekYear : 1 - signedWeekYear; // Two digit year
@@ -10309,7 +10257,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(weekYear, token.length);
   },
   // ISO week-numbering year
-  R: function (date, token) {
+  R: function R(date, token) {
     var isoWeekYear = (0,_lib_getUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(date); // Padding
 
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(isoWeekYear, token.length);
@@ -10323,12 +10271,12 @@ var formatters = {
   // | BC 2 |   2 |  -1 |
   // Also `yy` always returns the last two digits of a year,
   // while `uu` pads single digit years to 2 characters and returns other years unchanged.
-  u: function (date, token) {
+  u: function u(date, token) {
     var year = date.getUTCFullYear();
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(year, token.length);
   },
   // Quarter
-  Q: function (date, token, localize) {
+  Q: function Q(date, token, localize) {
     var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
 
     switch (token) {
@@ -10370,7 +10318,7 @@ var formatters = {
     }
   },
   // Stand-alone quarter
-  q: function (date, token, localize) {
+  q: function q(date, token, localize) {
     var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
 
     switch (token) {
@@ -10412,7 +10360,7 @@ var formatters = {
     }
   },
   // Month
-  M: function (date, token, localize) {
+  M: function M(date, token, localize) {
     var month = date.getUTCMonth();
 
     switch (token) {
@@ -10450,7 +10398,7 @@ var formatters = {
     }
   },
   // Stand-alone month
-  L: function (date, token, localize) {
+  L: function L(date, token, localize) {
     var month = date.getUTCMonth();
 
     switch (token) {
@@ -10492,7 +10440,7 @@ var formatters = {
     }
   },
   // Local week of year
-  w: function (date, token, localize, options) {
+  w: function w(date, token, localize, options) {
     var week = (0,_lib_getUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(date, options);
 
     if (token === 'wo') {
@@ -10504,7 +10452,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(week, token.length);
   },
   // ISO week of year
-  I: function (date, token, localize) {
+  I: function I(date, token, localize) {
     var isoWeek = (0,_lib_getUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_5__["default"])(date);
 
     if (token === 'Io') {
@@ -10516,7 +10464,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(isoWeek, token.length);
   },
   // Day of the month
-  d: function (date, token, localize) {
+  d: function d(date, token, localize) {
     if (token === 'do') {
       return localize.ordinalNumber(date.getUTCDate(), {
         unit: 'date'
@@ -10526,7 +10474,7 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].d(date, token);
   },
   // Day of year
-  D: function (date, token, localize) {
+  D: function D(date, token, localize) {
     var dayOfYear = (0,_lib_getUTCDayOfYear_index_js__WEBPACK_IMPORTED_MODULE_6__["default"])(date);
 
     if (token === 'Do') {
@@ -10538,7 +10486,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(dayOfYear, token.length);
   },
   // Day of week
-  E: function (date, token, localize) {
+  E: function E(date, token, localize) {
     var dayOfWeek = date.getUTCDay();
 
     switch (token) {
@@ -10575,7 +10523,7 @@ var formatters = {
     }
   },
   // Local day of week
-  e: function (date, token, localize, options) {
+  e: function e(date, token, localize, options) {
     var dayOfWeek = date.getUTCDay();
     var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
 
@@ -10624,7 +10572,7 @@ var formatters = {
     }
   },
   // Stand-alone local day of week
-  c: function (date, token, localize, options) {
+  c: function c(date, token, localize, options) {
     var dayOfWeek = date.getUTCDay();
     var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
 
@@ -10673,7 +10621,7 @@ var formatters = {
     }
   },
   // ISO day of week
-  i: function (date, token, localize) {
+  i: function i(date, token, localize) {
     var dayOfWeek = date.getUTCDay();
     var isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
 
@@ -10723,7 +10671,7 @@ var formatters = {
     }
   },
   // AM or PM
-  a: function (date, token, localize) {
+  a: function a(date, token, localize) {
     var hours = date.getUTCHours();
     var dayPeriodEnumValue = hours / 12 >= 1 ? 'pm' : 'am';
 
@@ -10756,7 +10704,7 @@ var formatters = {
     }
   },
   // AM, PM, midnight, noon
-  b: function (date, token, localize) {
+  b: function b(date, token, localize) {
     var hours = date.getUTCHours();
     var dayPeriodEnumValue;
 
@@ -10797,7 +10745,7 @@ var formatters = {
     }
   },
   // in the morning, in the afternoon, in the evening, at night
-  B: function (date, token, localize) {
+  B: function B(date, token, localize) {
     var hours = date.getUTCHours();
     var dayPeriodEnumValue;
 
@@ -10835,7 +10783,7 @@ var formatters = {
     }
   },
   // Hour [1-12]
-  h: function (date, token, localize) {
+  h: function h(date, token, localize) {
     if (token === 'ho') {
       var hours = date.getUTCHours() % 12;
       if (hours === 0) hours = 12;
@@ -10847,7 +10795,7 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].h(date, token);
   },
   // Hour [0-23]
-  H: function (date, token, localize) {
+  H: function H(date, token, localize) {
     if (token === 'Ho') {
       return localize.ordinalNumber(date.getUTCHours(), {
         unit: 'hour'
@@ -10857,7 +10805,7 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].H(date, token);
   },
   // Hour [0-11]
-  K: function (date, token, localize) {
+  K: function K(date, token, localize) {
     var hours = date.getUTCHours() % 12;
 
     if (token === 'Ko') {
@@ -10869,7 +10817,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(hours, token.length);
   },
   // Hour [1-24]
-  k: function (date, token, localize) {
+  k: function k(date, token, localize) {
     var hours = date.getUTCHours();
     if (hours === 0) hours = 24;
 
@@ -10882,7 +10830,7 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(hours, token.length);
   },
   // Minute
-  m: function (date, token, localize) {
+  m: function m(date, token, localize) {
     if (token === 'mo') {
       return localize.ordinalNumber(date.getUTCMinutes(), {
         unit: 'minute'
@@ -10892,7 +10840,7 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].m(date, token);
   },
   // Second
-  s: function (date, token, localize) {
+  s: function s(date, token, localize) {
     if (token === 'so') {
       return localize.ordinalNumber(date.getUTCSeconds(), {
         unit: 'second'
@@ -10902,11 +10850,11 @@ var formatters = {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].s(date, token);
   },
   // Fraction of second
-  S: function (date, token) {
+  S: function S(date, token) {
     return _lightFormatters_index_js__WEBPACK_IMPORTED_MODULE_0__["default"].S(date, token);
   },
   // Timezone (ISO-8601. If offset is 0, output is always `'Z'`)
-  X: function (date, token, _localize, options) {
+  X: function X(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timezoneOffset = originalDate.getTimezoneOffset();
 
@@ -10938,7 +10886,7 @@ var formatters = {
     }
   },
   // Timezone (ISO-8601. If offset is 0, output is `'+00:00'` or equivalent)
-  x: function (date, token, _localize, options) {
+  x: function x(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timezoneOffset = originalDate.getTimezoneOffset();
 
@@ -10966,7 +10914,7 @@ var formatters = {
     }
   },
   // Timezone (GMT)
-  O: function (date, token, _localize, options) {
+  O: function O(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timezoneOffset = originalDate.getTimezoneOffset();
 
@@ -10984,7 +10932,7 @@ var formatters = {
     }
   },
   // Timezone (specific non-location)
-  z: function (date, token, _localize, options) {
+  z: function z(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timezoneOffset = originalDate.getTimezoneOffset();
 
@@ -11002,13 +10950,13 @@ var formatters = {
     }
   },
   // Seconds timestamp
-  t: function (date, token, _localize, options) {
+  t: function t(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timestamp = Math.floor(originalDate.getTime() / 1000);
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(timestamp, token.length);
   },
   // Milliseconds timestamp
-  T: function (date, token, _localize, options) {
+  T: function T(date, token, _localize, options) {
     var originalDate = options._originalDate || date;
     var timestamp = originalDate.getTime();
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(timestamp, token.length);
@@ -11050,7 +10998,7 @@ function formatTimezone(offset, dirtyDelimiter) {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatters);
 
 /***/ }),
-/* 189 */
+/* 192 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11058,7 +11006,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(190);
+/* harmony import */ var _addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(193);
 
 /*
  * |     | Unit                           |     | Unit                           |
@@ -11075,7 +11023,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var formatters = {
   // Year
-  y: function (date, token) {
+  y: function y(date, token) {
     // From http://www.unicode.org/reports/tr35/tr35-31/tr35-dates.html#Date_Format_tokens
     // | Year     |     y | yy |   yyy |  yyyy | yyyyy |
     // |----------|-------|----|-------|-------|-------|
@@ -11090,16 +11038,16 @@ var formatters = {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(token === 'yy' ? year % 100 : year, token.length);
   },
   // Month
-  M: function (date, token) {
+  M: function M(date, token) {
     var month = date.getUTCMonth();
     return token === 'M' ? String(month + 1) : (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(month + 1, 2);
   },
   // Day of the month
-  d: function (date, token) {
+  d: function d(date, token) {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(date.getUTCDate(), token.length);
   },
   // AM or PM
-  a: function (date, token) {
+  a: function a(date, token) {
     var dayPeriodEnumValue = date.getUTCHours() / 12 >= 1 ? 'pm' : 'am';
 
     switch (token) {
@@ -11119,23 +11067,23 @@ var formatters = {
     }
   },
   // Hour [1-12]
-  h: function (date, token) {
+  h: function h(date, token) {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(date.getUTCHours() % 12 || 12, token.length);
   },
   // Hour [0-23]
-  H: function (date, token) {
+  H: function H(date, token) {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(date.getUTCHours(), token.length);
   },
   // Minute
-  m: function (date, token) {
+  m: function m(date, token) {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(date.getUTCMinutes(), token.length);
   },
   // Second
-  s: function (date, token) {
+  s: function s(date, token) {
     return (0,_addLeadingZeros_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(date.getUTCSeconds(), token.length);
   },
   // Fraction of second
-  S: function (date, token) {
+  S: function S(date, token) {
     var numberOfDigits = token.length;
     var milliseconds = date.getUTCMilliseconds();
     var fractionalSeconds = Math.floor(milliseconds * Math.pow(10, numberOfDigits - 3));
@@ -11145,7 +11093,7 @@ var formatters = {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatters);
 
 /***/ }),
-/* 190 */
+/* 193 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11165,7 +11113,7 @@ function addLeadingZeros(number, targetLength) {
 }
 
 /***/ }),
-/* 191 */
+/* 194 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11173,25 +11121,24 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ getUTCWeekYear)
 /* harmony export */ });
-/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(181);
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
-/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(192);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(195);
+/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(183);
+/* harmony import */ var _defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(171);
 
 
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
-function getUTCWeekYear(dirtyDate, dirtyOptions) {
+
+function getUTCWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
-  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate, dirtyOptions);
+  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate);
   var year = date.getUTCFullYear();
-  var options = dirtyOptions || {};
-  var locale = options.locale;
-  var localeFirstWeekContainsDate = locale && locale.options && locale.options.firstWeekContainsDate;
-  var defaultFirstWeekContainsDate = localeFirstWeekContainsDate == null ? 1 : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(localeFirstWeekContainsDate);
-  var firstWeekContainsDate = options.firstWeekContainsDate == null ? defaultFirstWeekContainsDate : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(options.firstWeekContainsDate); // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
+  var defaultOptions = (0,_defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_2__.getDefaultOptions)();
+  var firstWeekContainsDate = (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1); // Test if weekStartsOn is between 1 and 7 _and_ is not NaN
 
   if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
     throw new RangeError('firstWeekContainsDate must be between 1 and 7 inclusively');
@@ -11200,11 +11147,11 @@ function getUTCWeekYear(dirtyDate, dirtyOptions) {
   var firstWeekOfNextYear = new Date(0);
   firstWeekOfNextYear.setUTCFullYear(year + 1, 0, firstWeekContainsDate);
   firstWeekOfNextYear.setUTCHours(0, 0, 0, 0);
-  var startOfNextYear = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(firstWeekOfNextYear, dirtyOptions);
+  var startOfNextYear = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(firstWeekOfNextYear, options);
   var firstWeekOfThisYear = new Date(0);
   firstWeekOfThisYear.setUTCFullYear(year, 0, firstWeekContainsDate);
   firstWeekOfThisYear.setUTCHours(0, 0, 0, 0);
-  var startOfThisYear = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(firstWeekOfThisYear, dirtyOptions);
+  var startOfThisYear = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(firstWeekOfThisYear, options);
 
   if (date.getTime() >= startOfNextYear.getTime()) {
     return year + 1;
@@ -11216,7 +11163,7 @@ function getUTCWeekYear(dirtyDate, dirtyOptions) {
 }
 
 /***/ }),
-/* 192 */
+/* 195 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11224,27 +11171,26 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ startOfUTCWeek)
 /* harmony export */ });
-/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(181);
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(182);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(184);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(183);
+/* harmony import */ var _defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(171);
 
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
-function startOfUTCWeek(dirtyDate, dirtyOptions) {
+
+function startOfUTCWeek(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
-  var options = dirtyOptions || {};
-  var locale = options.locale;
-  var localeWeekStartsOn = locale && locale.options && locale.options.weekStartsOn;
-  var defaultWeekStartsOn = localeWeekStartsOn == null ? 0 : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(localeWeekStartsOn);
-  var weekStartsOn = options.weekStartsOn == null ? defaultWeekStartsOn : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(options.weekStartsOn); // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
+  var defaultOptions = (0,_defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__.getDefaultOptions)();
+  var weekStartsOn = (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0); // Test if weekStartsOn is between 0 and 6 _and_ is not NaN
 
   if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
     throw new RangeError('weekStartsOn must be between 0 and 6 inclusively');
   }
 
-  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(dirtyDate);
+  var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(dirtyDate);
   var day = date.getUTCDay();
   var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
   date.setUTCDate(date.getUTCDate() - diff);
@@ -11253,7 +11199,7 @@ function startOfUTCWeek(dirtyDate, dirtyOptions) {
 }
 
 /***/ }),
-/* 193 */
+/* 196 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11261,13 +11207,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ getUTCISOWeekYear)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
-/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(194);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(197);
 
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
 function getUTCISOWeekYear(dirtyDate) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
@@ -11292,7 +11236,7 @@ function getUTCISOWeekYear(dirtyDate) {
 }
 
 /***/ }),
-/* 194 */
+/* 197 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11300,11 +11244,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ startOfUTCISOWeek)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
 function startOfUTCISOWeek(dirtyDate) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
@@ -11318,7 +11260,7 @@ function startOfUTCISOWeek(dirtyDate) {
 }
 
 /***/ }),
-/* 195 */
+/* 198 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11326,17 +11268,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ getUTCWeek)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
-/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(192);
-/* harmony import */ var _startOfUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(196);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
+/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(195);
+/* harmony import */ var _startOfUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(199);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
 
 
-var MILLISECONDS_IN_WEEK = 604800000; // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
-
+var MILLISECONDS_IN_WEEK = 604800000;
 function getUTCWeek(dirtyDate, options) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
   var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate);
@@ -11348,7 +11288,7 @@ function getUTCWeek(dirtyDate, options) {
 }
 
 /***/ }),
-/* 196 */
+/* 199 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11356,33 +11296,32 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ startOfUTCWeekYear)
 /* harmony export */ });
-/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(181);
-/* harmony import */ var _getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(191);
-/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(192);
+/* harmony import */ var _getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(194);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
+/* harmony import */ var _startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(195);
+/* harmony import */ var _toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(183);
+/* harmony import */ var _defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(171);
 
 
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
-function startOfUTCWeekYear(dirtyDate, dirtyOptions) {
+
+function startOfUTCWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
-  var options = dirtyOptions || {};
-  var locale = options.locale;
-  var localeFirstWeekContainsDate = locale && locale.options && locale.options.firstWeekContainsDate;
-  var defaultFirstWeekContainsDate = localeFirstWeekContainsDate == null ? 1 : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(localeFirstWeekContainsDate);
-  var firstWeekContainsDate = options.firstWeekContainsDate == null ? defaultFirstWeekContainsDate : (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(options.firstWeekContainsDate);
-  var year = (0,_getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])(dirtyDate, dirtyOptions);
+  var defaultOptions = (0,_defaultOptions_index_js__WEBPACK_IMPORTED_MODULE_1__.getDefaultOptions)();
+  var firstWeekContainsDate = (0,_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__["default"])((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
+  var year = (0,_getUTCWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(dirtyDate, options);
   var firstWeek = new Date(0);
   firstWeek.setUTCFullYear(year, 0, firstWeekContainsDate);
   firstWeek.setUTCHours(0, 0, 0, 0);
-  var date = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_3__["default"])(firstWeek, dirtyOptions);
+  var date = (0,_startOfUTCWeek_index_js__WEBPACK_IMPORTED_MODULE_4__["default"])(firstWeek, options);
   return date;
 }
 
 /***/ }),
-/* 197 */
+/* 200 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11390,17 +11329,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ getUTCISOWeek)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
-/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(194);
-/* harmony import */ var _startOfUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(198);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
+/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(197);
+/* harmony import */ var _startOfUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(201);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
 
 
-var MILLISECONDS_IN_WEEK = 604800000; // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
-
+var MILLISECONDS_IN_WEEK = 604800000;
 function getUTCISOWeek(dirtyDate) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
   var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate);
@@ -11412,7 +11349,7 @@ function getUTCISOWeek(dirtyDate) {
 }
 
 /***/ }),
-/* 198 */
+/* 201 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11420,13 +11357,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ startOfUTCISOWeekYear)
 /* harmony export */ });
-/* harmony import */ var _getUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(193);
-/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(194);
+/* harmony import */ var _getUTCISOWeekYear_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(196);
+/* harmony import */ var _startOfUTCISOWeek_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(197);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
- // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
 
 function startOfUTCISOWeekYear(dirtyDate) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
@@ -11439,7 +11374,7 @@ function startOfUTCISOWeekYear(dirtyDate) {
 }
 
 /***/ }),
-/* 199 */
+/* 202 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11447,13 +11382,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ getUTCDayOfYear)
 /* harmony export */ });
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
-var MILLISECONDS_IN_DAY = 86400000; // This function will be a part of public API when UTC function will be implemented.
-// See issue: https://github.com/date-fns/date-fns/issues/376
-
+var MILLISECONDS_IN_DAY = 86400000;
 function getUTCDayOfYear(dirtyDate) {
   (0,_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__["default"])(1, arguments);
   var date = (0,_toDate_index_js__WEBPACK_IMPORTED_MODULE_1__["default"])(dirtyDate);
@@ -11466,7 +11399,7 @@ function getUTCDayOfYear(dirtyDate) {
 }
 
 /***/ }),
-/* 200 */
+/* 203 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11486,18 +11419,18 @@ function isProtectedWeekYearToken(token) {
 }
 function throwProtectedError(token, format, input) {
   if (token === 'YYYY') {
-    throw new RangeError("Use `yyyy` instead of `YYYY` (in `".concat(format, "`) for formatting years to the input `").concat(input, "`; see: https://git.io/fxCyr"));
+    throw new RangeError("Use `yyyy` instead of `YYYY` (in `".concat(format, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
   } else if (token === 'YY') {
-    throw new RangeError("Use `yy` instead of `YY` (in `".concat(format, "`) for formatting years to the input `").concat(input, "`; see: https://git.io/fxCyr"));
+    throw new RangeError("Use `yy` instead of `YY` (in `".concat(format, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
   } else if (token === 'D') {
-    throw new RangeError("Use `d` instead of `D` (in `".concat(format, "`) for formatting days of the month to the input `").concat(input, "`; see: https://git.io/fxCyr"));
+    throw new RangeError("Use `d` instead of `D` (in `".concat(format, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
   } else if (token === 'DD') {
-    throw new RangeError("Use `dd` instead of `DD` (in `".concat(format, "`) for formatting days of the month to the input `").concat(input, "`; see: https://git.io/fxCyr"));
+    throw new RangeError("Use `dd` instead of `DD` (in `".concat(format, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
   }
 }
 
 /***/ }),
-/* 201 */
+/* 204 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11505,8 +11438,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ subMonths)
 /* harmony export */ });
-/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(181);
-/* harmony import */ var _addMonths_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(202);
+/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(183);
+/* harmony import */ var _addMonths_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(205);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
@@ -11518,10 +11451,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @description
  * Subtract the specified number of months from the given date.
- *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
  *
  * @param {Date|Number} date - the date to be changed
  * @param {Number} amount - the amount of months to be subtracted. Positive decimals will be rounded using `Math.floor`, decimals less than zero will be rounded using `Math.ceil`.
@@ -11541,7 +11470,7 @@ function subMonths(dirtyDate, dirtyAmount) {
 }
 
 /***/ }),
-/* 202 */
+/* 205 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -11549,8 +11478,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ addMonths)
 /* harmony export */ });
-/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(181);
-/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(182);
+/* harmony import */ var _lib_toInteger_index_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(183);
+/* harmony import */ var _toDate_index_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(184);
 /* harmony import */ var _lib_requiredArgs_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(170);
 
 
@@ -11562,10 +11491,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @description
  * Add the specified number of months to the given date.
- *
- * ### v2.0.0 breaking changes:
- *
- * - [Changes that are common for the whole library](https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#Common-Changes).
  *
  * @param {Date|Number} date - the date to be changed
  * @param {Number} amount - the amount of months to be added. Positive decimals will be rounded using `Math.floor`, decimals less than zero will be rounded using `Math.ceil`.
@@ -11721,11 +11646,11 @@ var __webpack_exports__ = {};
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var cozy_clisk_dist_contentscript__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _cozy_minilog__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(73);
+/* harmony import */ var _cozy_minilog__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(21);
 /* harmony import */ var _cozy_minilog__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_cozy_minilog__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(169);
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(201);
-/* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(96);
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(204);
+/* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(44);
 /* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__);
 /* eslint-disable prettier/prettier */
 
@@ -11802,7 +11727,10 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   async fetch(context) {
-    this.log('debug', 'fetch starts')
+    this.log('fetch starts')
+    if(this.store.userCredentials){
+      await this.saveCredentials(this.store.userCredentials)
+    }
     await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
@@ -11876,7 +11804,6 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       )
     }
     await this.waitForUserAuthentication()
-    await this.saveCredentials(this.store.userCredentials)
     const isAskingForDownloadAgain = await this.runInWorker(
       'checkAskForAppDownload'
     )

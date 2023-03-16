@@ -11790,8 +11790,12 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
 
   async authWithoutCredentials() {
     await this.goto(BASE_URL)
-    await this.waitForElementInWorker('.murray__Select__OptionButton')
-    await this.runInWorker('ensureFrenchWebsiteVersion')
+    await this.waitForElementInWorker('.CountrySwitcher')
+    const isFrench = await this.runInWorker('ensureFrenchWebsiteVersion')
+    if(!isFrench){
+      await this.goto('https://alan.com/')
+      await this.waitForElementInWorker('.CountrySwitcher')
+    }
     await this.waitForElementInWorker('a[href="/login"]')
     await this.clickAndWait('a[href="/login"]', 'a')
     await this.waitForElementInWorker('a')
@@ -11888,12 +11892,11 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
   }
 
   ensureFrenchWebsiteVersion(){
-    const languageList = document.querySelectorAll('.murray__Select__OptionButton')
-    for (const language of languageList){
-      if (language.textContent.includes('Fran')){
-        language.click()
-        break
-      }
+    const locationHref = document.location.href
+    if(locationHref !== 'https://alan.com/'){
+      return false
+    }else{
+      return true
     }
   }
 

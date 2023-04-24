@@ -11941,7 +11941,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(207);
 /* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(47);
 /* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__);
-/* eslint-disable prettier/prettier */
 
 
 const log = _cozy_minilog__WEBPACK_IMPORTED_MODULE_1___default()('ContentScript')
@@ -12017,7 +12016,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
 
   async fetch(context) {
     this.log('fetch starts')
-    if(this.store.userCredentials){
+    if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
     await this.runInWorker(
@@ -12032,15 +12031,15 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       qualificationLabel: 'health_insurance_card'
     })
     // Classify bills by date
-    this.store.bills.sort(function(a,b) {
+    this.store.bills.sort(function (a, b) {
       return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
     const numberOfBills = this.store.bills.length
     let savedBills = 0
     this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
-    while (this.store.bills.length !== 0){
-      const tenBlock = this.store.bills.splice(0,10)
+    while (this.store.bills.length !== 0) {
+      const tenBlock = this.store.bills.splice(0, 10)
       savedBills = savedBills + tenBlock.length
       await this.saveBills(tenBlock, {
         context,
@@ -12081,7 +12080,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     await this.goto(BASE_URL)
     await this.waitForElementInWorker('.CountrySwitcher')
     const isFrench = await this.runInWorker('ensureFrenchWebsiteVersion')
-    if(!isFrench){
+    if (!isFrench) {
       await this.goto('https://alan.com/')
       await this.waitForElementInWorker('.CountrySwitcher')
     }
@@ -12144,7 +12143,13 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
         userCredentials
       })
     }
-    if(document.location.href.includes(`${HOMEPAGE_URL}`) && document.querySelector('a[href="#"]') || document.querySelector('div[class="ListItem ListItem__Clickable ListCareEventItem"]')){
+    if (
+      (document.location.href.includes(`${HOMEPAGE_URL}`) &&
+        document.querySelector('a[href="#"]')) ||
+      document.querySelector(
+        'div[class="ListItem ListItem__Clickable ListCareEventItem"]'
+      )
+    ) {
       this.log('info', 'Auth Check succeeded')
       return true
     }
@@ -12180,11 +12185,11 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     }
   }
 
-  ensureFrenchWebsiteVersion(){
+  ensureFrenchWebsiteVersion() {
     const locationHref = document.location.href
-    if(locationHref !== 'https://alan.com/'){
+    if (locationHref !== 'https://alan.com/') {
       return false
-    }else{
+    } else {
       return true
     }
   }

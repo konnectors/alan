@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { ContentScript } from 'cozy-clisk/dist/contentscript'
 import Minilog from '@cozy/minilog'
 const log = Minilog('ContentScript')
@@ -74,7 +73,7 @@ class TemplateContentScript extends ContentScript {
 
   async fetch(context) {
     this.log('fetch starts')
-    if(this.store.userCredentials){
+    if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
     await this.runInWorker(
@@ -89,15 +88,15 @@ class TemplateContentScript extends ContentScript {
       qualificationLabel: 'health_insurance_card'
     })
     // Classify bills by date
-    this.store.bills.sort(function(a,b) {
+    this.store.bills.sort(function (a, b) {
       return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
     const numberOfBills = this.store.bills.length
     let savedBills = 0
     this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
-    while (this.store.bills.length !== 0){
-      const tenBlock = this.store.bills.splice(0,10)
+    while (this.store.bills.length !== 0) {
+      const tenBlock = this.store.bills.splice(0, 10)
       savedBills = savedBills + tenBlock.length
       await this.saveBills(tenBlock, {
         context,
@@ -138,7 +137,7 @@ class TemplateContentScript extends ContentScript {
     await this.goto(BASE_URL)
     await this.waitForElementInWorker('.CountrySwitcher')
     const isFrench = await this.runInWorker('ensureFrenchWebsiteVersion')
-    if(!isFrench){
+    if (!isFrench) {
       await this.goto('https://alan.com/')
       await this.waitForElementInWorker('.CountrySwitcher')
     }
@@ -201,7 +200,13 @@ class TemplateContentScript extends ContentScript {
         userCredentials
       })
     }
-    if(document.location.href.includes(`${HOMEPAGE_URL}`) && document.querySelector('a[href="#"]') || document.querySelector('div[class="ListItem ListItem__Clickable ListCareEventItem"]')){
+    if (
+      (document.location.href.includes(`${HOMEPAGE_URL}`) &&
+        document.querySelector('a[href="#"]')) ||
+      document.querySelector(
+        'div[class="ListItem ListItem__Clickable ListCareEventItem"]'
+      )
+    ) {
       this.log('info', 'Auth Check succeeded')
       return true
     }
@@ -237,11 +242,11 @@ class TemplateContentScript extends ContentScript {
     }
   }
 
-  ensureFrenchWebsiteVersion(){
+  ensureFrenchWebsiteVersion() {
     const locationHref = document.location.href
-    if(locationHref !== 'https://alan.com/'){
+    if (locationHref !== 'https://alan.com/') {
       return false
-    }else{
+    } else {
       return true
     }
   }

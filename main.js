@@ -2031,8 +2031,8 @@ module.exports = _toPrimitive, module.exports.__esModule = true, module.exports[
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ pWaitFor),
-/* harmony export */   "TimeoutError": () => (/* reexport safe */ p_timeout__WEBPACK_IMPORTED_MODULE_0__.TimeoutError)
+/* harmony export */   "TimeoutError": () => (/* reexport safe */ p_timeout__WEBPACK_IMPORTED_MODULE_0__.TimeoutError),
+/* harmony export */   "default": () => (/* binding */ pWaitFor)
 /* harmony export */ });
 /* harmony import */ var p_timeout__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(19);
 
@@ -2099,8 +2099,8 @@ pWaitFor.resolveWith = value => ({[resolveValue]: value});
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "TimeoutError": () => (/* binding */ TimeoutError),
 /* harmony export */   "AbortError": () => (/* binding */ AbortError),
+/* harmony export */   "TimeoutError": () => (/* binding */ TimeoutError),
 /* harmony export */   "default": () => (/* binding */ pTimeout)
 /* harmony export */ });
 class TimeoutError extends Error {
@@ -4937,7 +4937,7 @@ module.exports = _defineProperty, module.exports.__esModule = true, module.expor
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"cozy-clisk","version":"0.12.0","description":"All the libs needed to run a cozy client connector","repository":{"type":"git","url":"git+https://github.com/konnectors/libs.git"},"files":["dist"],"keywords":["konnector"],"main":"dist/index.js","author":"doubleface <christophe@cozycloud.cc>","license":"MIT","bugs":{"url":"https://github.com/konnectors/libs/issues"},"homepage":"https://github.com/konnectors/libs#readme","scripts":{"lint":"eslint \'src/**/*.js\'","prepublishOnly":"yarn run build","build":"babel --root-mode upward src/ -d dist/ --copy-files --verbose --ignore \'**/*.spec.js\',\'**/*.spec.jsx\'","test":"jest src"},"devDependencies":{"@babel/core":"^7.20.12","babel-jest":"^29.3.1","babel-preset-cozy-app":"^2.0.4","jest":"^29.3.1","jest-environment-jsdom":"^29.3.1","typescript":"^4.9.5"},"dependencies":{"@cozy/minilog":"^1.0.0","bluebird-retry":"^0.11.0","cozy-client":"^34.11.0","ky":"^0.25.1","lodash":"^4.17.21","p-wait-for":"^5.0.1","post-me":"^0.4.5"},"gitHead":"9407382dd48f34ccbd13ad7fae5c48c48822c99b"}');
+module.exports = JSON.parse('{"name":"cozy-clisk","version":"0.12.1","description":"All the libs needed to run a cozy client connector","repository":{"type":"git","url":"git+https://github.com/konnectors/libs.git"},"files":["dist"],"keywords":["konnector"],"main":"dist/index.js","author":"doubleface <christophe@cozycloud.cc>","license":"MIT","bugs":{"url":"https://github.com/konnectors/libs/issues"},"homepage":"https://github.com/konnectors/libs#readme","scripts":{"lint":"eslint \'src/**/*.js\'","prepublishOnly":"yarn run build","build":"babel --root-mode upward src/ -d dist/ --copy-files --verbose --ignore \'**/*.spec.js\',\'**/*.spec.jsx\'","test":"jest src"},"devDependencies":{"@babel/core":"7.20.12","babel-jest":"29.3.1","babel-preset-cozy-app":"2.0.4","jest":"29.3.1","jest-environment-jsdom":"29.3.1","typescript":"4.9.5"},"dependencies":{"@cozy/minilog":"^1.0.0","bluebird-retry":"^0.11.0","cozy-client":"^34.11.0","ky":"^0.25.1","lodash":"^4.17.21","p-wait-for":"^5.0.1","post-me":"^0.4.5"},"gitHead":"71f9f49c8487a0eaf765b655ab4d092c78daeb5a"}');
 
 /***/ }),
 /* 46 */

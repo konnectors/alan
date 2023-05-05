@@ -26,13 +26,41 @@ window.fetch = function () {
 const BASE_URL = 'https://alan.com/'
 const LOGIN_URL = 'https://alan.com/login'
 const HOMEPAGE_URL = 'https://alan.com/app/dashboard'
+const LOGOUT_URL = `${BASE_URL}/logout`
 const DEFAULT_SOURCE_ACCOUNT_IDENTIFIER = 'alan'
 
 class TemplateContentScript extends ContentScript {
   // ////////
   // PILOT //
   // ////////
+  async navigateToLoginForm() {
+    this.log('info', 'navigateToLoginForm starts')
+    // Here we navigate directly to the dashboard page because if we're already connected, we stay on the dashboard page
+    // but if not, there is a redirection to the loginForm
+    await this.goto(HOMEPAGE_URL)
+    await Promise.race([
+      this.waitForElementInWorker('input[name="email"]'),
+      this.waitForElementInWorker('.ListItem__Clickable')
+    ])
+  }
+
+  async ensureNotAuthenticated() {
+    this.log('info', 'ensureNotAuthenticated starts')
+    await this.navigateToLoginForm()
+    const authenticated = await this.runInWorker('checkAuthenticated')
+    if (!authenticated) {
+      this.log('info', 'not auth, returning true')
+      return true
+    }
+    this.log('info', 'Auth detected, logging out')
+    await this.goto(LOGOUT_URL)
+    await this.waitForElementInWorker('a[href="/login"]')
+    return true
+  }
+
   async ensureAuthenticated() {
+    this.log('info', 'ensureAuthenticated starts')
+    await this.navigateToLoginForm()
     const credentials = await this.getCredentials()
     if (credentials) {
       const auth = await this.authWithCredentials(credentials)

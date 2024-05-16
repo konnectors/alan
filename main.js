@@ -12801,6 +12801,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       'https://api.alan.com',
       'token'
     )
+    // eslint-disable-next-line no-console
     console.log('TOKEN', JSON.stringify(token, null, 2))
     const documentsUrl =
       'https://api.alan.com/api/users/${beneficiaryId}?expand=visible_insurance_documents,address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'

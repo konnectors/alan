@@ -12609,6 +12609,7 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
 
   async fetch(context) {
     this.log('fetch starts')
+    throw new Error('fetch test normal error')
     if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }

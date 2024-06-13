@@ -12506,7 +12506,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(213);
 /* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(52);
 /* harmony import */ var lodash_groupBy__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(lodash_groupBy__WEBPACK_IMPORTED_MODULE_2__);
-/* eslint-disable no-console,no-unreachable */
 
 
 const log = _cozy_minilog__WEBPACK_IMPORTED_MODULE_1___default()('ContentScript')
@@ -12610,7 +12609,6 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
 
   async fetch(context) {
     this.log('fetch starts')
-    throw new Error('fetch test normal error')
     if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
@@ -12803,7 +12801,6 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       'https://api.alan.com',
       'token'
     )
-    console.log('TOKEN', JSON.stringify(token, null, 2))
     const documentsUrl =
       'https://api.alan.com/api/users/${beneficiaryId}?expand=visible_insurance_documents,address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'
     const jsonDocuments = await this.fetchAlanApi(documentsUrl, token.value)

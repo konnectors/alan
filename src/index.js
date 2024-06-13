@@ -33,6 +33,43 @@ class TemplateContentScript extends ContentScript {
   // ////////
   // PILOT //
   // ////////
+  async onWorkerEvent({ event, payload }) {
+    if (event === 'loginSubmit') {
+      const { login, password } = payload || {}
+      if (login && password) {
+        this.log(
+          'info',
+          `intercepted {login, password} : ${JSON.stringify({
+            login,
+            password
+          })}`
+        )
+        this.store.userCredentials = { login, password }
+      } else {
+        this.log('warn', 'Did not manage to intercept credentials')
+      }
+    }
+  }
+
+  async onWorkerReady() {
+    function addSubmitListener() {
+      const submitButton = document.querySelector(
+        'button[data-testid="submitButton"]'
+      )
+      submitButton.addEventListener('click', () => {
+        const login = document.querySelector(`input[name="email"]`)?.value
+        const password = document.querySelector('input[name="password"]')?.value
+        this.bridge.emit('workerEvent', {
+          event: 'loginSubmit',
+          payload: { login, password }
+        })
+      })
+    }
+    await this.waitForElementNoReload('input[name="email"]')
+    this.log('info', 'Form detected, adding listener')
+    addSubmitListener.bind(this)()
+  }
+
   async navigateToLoginForm() {
     this.log('info', 'navigateToLoginForm starts')
     // Here we navigate directly to the dashboard page because if we're already connected, we stay on the dashboard page
@@ -60,6 +97,7 @@ class TemplateContentScript extends ContentScript {
 
   async ensureAuthenticated() {
     this.log('info', 'ensureAuthenticated starts')
+    this.bridge.addEventListener('workerEvent', this.onWorkerEvent.bind(this))
     await this.navigateToLoginForm()
     const credentials = await this.getCredentials()
     if (credentials) {
@@ -86,16 +124,26 @@ class TemplateContentScript extends ContentScript {
   }
 
   async getUserDataFromWebsite() {
-    await this.runInWorker('getUserDatas')
-    const sourceAccountId = this.store.userIdentity.email
-      ? this.store.userIdentity.email
-      : 'UNKNOWN_ERROR'
-    if (sourceAccountId === 'UNKNOWN_ERROR') {
-      this.log('debug', "Couldn't get a sourceAccountIdentifier, using default")
-      return { sourceAccountIdentifier: DEFAULT_SOURCE_ACCOUNT_IDENTIFIER }
+    this.log('info', '🤖 getUserDataFromWebsite starts')
+    await this.runInWorker('getUserData')
+    const credentials = await this.getCredentials()
+    const credentialsLogin = credentials?.login
+    const storeLogin = this.store?.userCredentials?.login
+
+    // prefer credentials over user email since it may not be know by the user
+    let sourceAccountIdentifier = credentialsLogin || storeLogin
+    if (!sourceAccountIdentifier) {
+      sourceAccountIdentifier = this.store.userIdentity?.email
     }
+
+    if (!sourceAccountIdentifier) {
+      throw new Error(
+        'Could not get a sourceAccountIdentifier, no credentials found or saved, no email in identity'
+      )
+    }
+
     return {
-      sourceAccountIdentifier: sourceAccountId
+      sourceAccountIdentifier: sourceAccountIdentifier
     }
   }
 
@@ -138,6 +186,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async authWithCredentials(credentials) {
+    this.log('info', '📍️ authWithCredentials starts')
     await this.goto(LOGIN_URL)
     await this.waitForElementInWorker('a')
     const isAskingForLogin = await this.runInWorker('checkAskForLogin')
@@ -162,9 +211,11 @@ class TemplateContentScript extends ContentScript {
   }
 
   async authWithoutCredentials() {
+    this.log('info', '📍️ authWithoutCredentials starts')
     await this.goto(BASE_URL)
     await this.waitForElementInWorker('.CountrySwitcher')
     const isFrench = await this.runInWorker('ensureFrenchWebsiteVersion')
+    // await this.runInWorkerUntilTrue({ method: 'ensureFrenchWebsiteVersion' })
     if (!isFrench) {
       await this.goto('https://alan.com/')
       await this.waitForElementInWorker('.CountrySwitcher')
@@ -172,7 +223,6 @@ class TemplateContentScript extends ContentScript {
     await this.waitForElementInWorker('a[href="/login"]')
     await this.clickAndWait('a[href="/login"]', 'a')
     await this.waitForElementInWorker('a')
-    // await this.waitForElementInWorker('[pause]')
     const isAskingForDownload = await this.runInWorker('checkAskForAppDownload')
     if (isAskingForDownload) {
       await this.clickAndWait(
@@ -216,18 +266,6 @@ class TemplateContentScript extends ContentScript {
   // ////////
 
   async checkAuthenticated() {
-    const loginField = document.querySelector('input[name="email"]')
-    const passwordField = document.querySelector('input[name="password"]')
-    if (loginField && passwordField) {
-      const userCredentials = await this.findAndSendCredentials.bind(this)(
-        loginField,
-        passwordField
-      )
-      this.log('debug', 'Sendin userCredentials to Pilot')
-      this.sendToPilot({
-        userCredentials
-      })
-    }
     if (
       (document.location.href.includes(`${HOMEPAGE_URL}`) &&
         document.querySelector('a[href="#"]')) ||
@@ -240,18 +278,6 @@ class TemplateContentScript extends ContentScript {
     }
     this.log('debug', 'Not respecting condition, returning false')
     return false
-  }
-
-  async findAndSendCredentials(login, password) {
-    this.log('debug', 'findAndSendCredentials starts')
-    let userLogin = login.value
-    let userPassword = password.value
-    const userCredentials = {
-      login: userLogin,
-      password: userPassword,
-      preHashedPassword
-    }
-    return userCredentials
   }
 
   checkAskForAppDownload() {
@@ -288,7 +314,7 @@ class TemplateContentScript extends ContentScript {
     return 'UNKNOWN_ERROR'
   }
 
-  async getUserDatas() {
+  async getUserData() {
     let token = await this.getCookieByDomainAndName(
       'https://api.alan.com',
       'token'
@@ -544,7 +570,7 @@ connector
       'checkAskForAppDownload',
       'checkIfLogged',
       'getUserMail',
-      'getUserDatas',
+      'getUserData',
       'getDocuments',
       'checkAskForLogin',
       'makeLoginReq',

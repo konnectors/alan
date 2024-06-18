@@ -12661,27 +12661,27 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
-    await this.runInWorker(
+    let { tpCard, bills } = await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
       this.store.token
     )
-    await this.saveFiles(this.store.tpCard, {
+    await this.saveFiles(tpCard, {
       context,
       contentType: 'application/pdf',
       fileIdAttributes: ['filename'],
       qualificationLabel: 'health_insurance_card'
     })
     // Classify bills by date
-    this.store.bills.sort(function (a, b) {
+    bills.sort(function (a, b) {
       return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
-    const numberOfBills = this.store.bills.length
+    const numberOfBills = bills.length
     let savedBills = 0
     this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
-    while (this.store.bills.length !== 0) {
-      const tenBlock = this.store.bills.splice(0, 10)
+    while (bills.length !== 0) {
+      const tenBlock = bills.splice(0, 10)
       savedBills = savedBills + tenBlock.length
       await this.saveBills(tenBlock, {
         context,
@@ -12838,10 +12838,11 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     bills = this.computeGroupAmounts(bills)
     bills = this.linkFiles(bills, userDatas.beneficiariesWithIds, token.value)
     const tpCard = await this.getTpCard(tpCardIdentifier, token.value)
-    await Promise.all([
-      this.sendToPilot({ tpCard }),
-      this.sendToPilot({ bills })
-    ])
+    this.log('info', 'tpCard: ' + tpCard)
+    return {
+      tpCard,
+      bills
+    }
   }
 
   async computeDocuments(jsonDocuments, jsonEvents) {

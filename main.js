@@ -12661,27 +12661,28 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
     if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
-    let { tpCard, bills } = await this.runInWorker(
+    let documents = await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
       this.store.token
     )
-    await this.saveFiles(tpCard, {
+    this.log('info', 'documents: ' + JSON.stringify(documents, null, 2))
+    await this.saveFiles(documents.tpCard, {
       context,
       contentType: 'application/pdf',
       fileIdAttributes: ['filename'],
       qualificationLabel: 'health_insurance_card'
     })
     // Classify bills by date
-    bills.sort(function (a, b) {
+    documents.bills.sort(function (a, b) {
       return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
-    const numberOfBills = bills.length
+    const numberOfBills = documents.bills.length
     let savedBills = 0
     this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
-    while (bills.length !== 0) {
-      const tenBlock = bills.splice(0, 10)
+    while (documents.bills.length !== 0) {
+      const tenBlock = documents.bills.splice(0, 10)
       savedBills = savedBills + tenBlock.length
       await this.saveBills(tenBlock, {
         context,

@@ -5,34 +5,72 @@ import { format, subMonths } from 'date-fns'
 import groupBy from 'lodash/groupBy'
 Minilog.enable('alanCCC')
 
+// Keeping this interception around for later investigations, mandatory for autoLogin
 // Here we need to intercept the prehashed_password in the login's request
 // to be able to make the autoLogin work on next connection.
-let preHashedPassword
-const constantMock = window.fetch
-window.fetch = function () {
-  if (arguments[0].includes !== undefined) {
-    if (arguments[0].includes('api.alan.com/auth/login')) {
-      if (arguments[1].data) {
-        preHashedPassword = arguments[1].data.prehashed_password
-      }
-      return constantMock.apply(this, arguments)
-    } else {
-      return constantMock.apply(this, arguments)
-    }
-  }
-  return constantMock.apply(this, arguments)
-}
+// let preHashedPassword
+// const constantMock = window.fetch
+// window.fetch = function () {
+//   if (arguments[0].includes !== undefined) {
+//     if (
+//       arguments[0].includes(
+//         'idp.alan.com/realms/alan/protocol/openid-connect/token'
+//       )
+//     ) {
+//       if (arguments[1]) {
+//         // The sent password in this request is preHashed by alan when sending loginForm
+//         const paramsObject = Object.fromEntries(
+//           new URLSearchParams(arguments[1].body).entries()
+//         )
+//         preHashedPassword = paramsObject.password
+//       }
+//       return constantMock.apply(this, arguments)
+//     } else {
+//       return constantMock.apply(this, arguments)
+//     }
+//   }
+//   return constantMock.apply(this, arguments)
+// }
 
 const BASE_URL = 'https://alan.com/'
 const LOGIN_URL = 'https://alan.com/login'
 const HOMEPAGE_URL = 'https://alan.com/app/dashboard'
 const LOGOUT_URL = `${BASE_URL}/logout`
-const DEFAULT_SOURCE_ACCOUNT_IDENTIFIER = 'alan'
 
 class TemplateContentScript extends ContentScript {
   // ////////
   // PILOT //
   // ////////
+  async onWorkerEvent({ event, payload }) {
+    if (event === 'loginSubmit') {
+      const { login, password } = payload || {}
+      if (login && password) {
+        this.store.userCredentials = { login, password }
+      } else {
+        this.log('warn', 'Did not manage to intercept credentials')
+      }
+    }
+  }
+
+  async onWorkerReady() {
+    function addSubmitListener() {
+      const submitButton = document.querySelector(
+        'button[data-testid="submitButton"]'
+      )
+      submitButton.addEventListener('click', () => {
+        const login = document.querySelector(`input[name="email"]`)?.value
+        const password = document.querySelector('input[name="password"]')?.value
+        this.bridge.emit('workerEvent', {
+          event: 'loginSubmit',
+          payload: { login, password }
+        })
+      })
+    }
+    await this.waitForElementNoReload('input[name="email"]')
+    this.log('info', 'Form detected, adding listener')
+    addSubmitListener.bind(this)()
+  }
+
   async navigateToLoginForm() {
     this.log('info', 'navigateToLoginForm starts')
     // Here we navigate directly to the dashboard page because if we're already connected, we stay on the dashboard page
@@ -60,22 +98,21 @@ class TemplateContentScript extends ContentScript {
 
   async ensureAuthenticated() {
     this.log('info', 'ensureAuthenticated starts')
+    this.bridge.addEventListener('workerEvent', this.onWorkerEvent.bind(this))
     await this.navigateToLoginForm()
+    // No more autoFill or autoLogin possible, website is checking isTrusted
     const credentials = await this.getCredentials()
     if (credentials) {
-      const auth = await this.authWithCredentials(credentials)
-      if (auth) {
+      if (await this.isElementInWorker('.ListItem__Clickable')) {
+        this.log('info', 'Logged from previous run, continue')
         return true
       }
-      return false
     }
-    if (!credentials) {
-      const auth = await this.authWithoutCredentials()
-      if (auth) {
-        return true
-      }
-      return false
+    const auth = await this.userAuth()
+    if (auth) {
+      return true
     }
+    return false
   }
 
   async waitForUserAuthentication() {
@@ -86,16 +123,26 @@ class TemplateContentScript extends ContentScript {
   }
 
   async getUserDataFromWebsite() {
-    await this.runInWorker('getUserDatas')
-    const sourceAccountId = this.store.userIdentity.email
-      ? this.store.userIdentity.email
-      : 'UNKNOWN_ERROR'
-    if (sourceAccountId === 'UNKNOWN_ERROR') {
-      this.log('debug', "Couldn't get a sourceAccountIdentifier, using default")
-      return { sourceAccountIdentifier: DEFAULT_SOURCE_ACCOUNT_IDENTIFIER }
+    this.log('info', '🤖 getUserDataFromWebsite starts')
+    const userInfos = await this.runInWorker('getUserData')
+    this.store = { ...this.store, ...userInfos }
+    const credentials = await this.getCredentials()
+    const credentialsLogin = credentials?.login
+    const storeLogin = this.store?.userCredentials?.login
+
+    // prefer credentials over user email since it may not be know by the user
+    let sourceAccountIdentifier = credentialsLogin || storeLogin
+    if (!sourceAccountIdentifier) {
+      sourceAccountIdentifier = this.store.userIdentity?.email
+    }
+
+    if (!sourceAccountIdentifier) {
+      throw new Error(
+        'Could not get a sourceAccountIdentifier, no credentials found or saved, no email in identity'
+      )
     }
     return {
-      sourceAccountIdentifier: sourceAccountId
+      sourceAccountIdentifier: sourceAccountIdentifier
     }
   }
 
@@ -137,48 +184,12 @@ class TemplateContentScript extends ContentScript {
     }
   }
 
-  async authWithCredentials(credentials) {
-    await this.goto(LOGIN_URL)
-    await this.waitForElementInWorker('a')
-    const isAskingForLogin = await this.runInWorker('checkAskForLogin')
-    if (isAskingForLogin) {
-      const isSuccess = await this.tryAutoLogin(credentials)
-      if (isSuccess) {
-        return true
-      }
-    }
-    const isAskingForDownload = await this.runInWorker('checkAskForAppDownload')
-    if (isAskingForDownload) {
-      await this.clickAndWait(
-        'a[href="#"]',
-        'div[class="ListItem ListItem__Clickable ListCareEventItem"]'
-      )
-    }
-    const isLogged = await this.runInWorker('checkIfLogged')
-    if (isLogged) {
-      return true
-    }
-    await this.clickAndWait('a[href="/login"]', 'input[name="password"]')
-  }
-
-  async authWithoutCredentials() {
-    await this.goto(BASE_URL)
-    await this.waitForElementInWorker('.CountrySwitcher')
-    const isFrench = await this.runInWorker('ensureFrenchWebsiteVersion')
-    if (!isFrench) {
-      await this.goto('https://alan.com/')
-      await this.waitForElementInWorker('.CountrySwitcher')
-    }
-    await this.waitForElementInWorker('a[href="/login"]')
-    await this.clickAndWait('a[href="/login"]', 'a')
-    await this.waitForElementInWorker('a')
-    // await this.waitForElementInWorker('[pause]')
-    const isAskingForDownload = await this.runInWorker('checkAskForAppDownload')
-    if (isAskingForDownload) {
-      await this.clickAndWait(
-        'a[href="#"]',
-        'div[class="ListItem ListItem__Clickable ListCareEventItem"]'
-      )
+  async userAuth() {
+    this.log('info', '📍️ userAuth starts')
+    if (!(await this.isElementInWorker('input[name="email"]'))) {
+      this.log('debug', 'Not login page')
+      await this.goto(LOGIN_URL)
+      await this.waitForElementInWorker('input[name="email"]')
     }
     await this.waitForUserAuthentication()
     const isAskingForDownloadAgain = await this.runInWorker(
@@ -186,29 +197,12 @@ class TemplateContentScript extends ContentScript {
     )
     if (isAskingForDownloadAgain) {
       await this.clickAndWait(
-        'a[href="#"]',
+        // on the askingForDownload page, there's only one "button" element, the other is an "a", so no need precise specifications after checking
+        'button',
         'div[class="ListItem ListItem__Clickable ListCareEventItem"]'
       )
     }
     return true
-  }
-
-  async tryAutoLogin(credentials) {
-    this.log('info', 'Trying autologin')
-    const isSuccess = await this.autoLogin(credentials)
-    return isSuccess
-  }
-
-  async autoLogin(credentials) {
-    this.log('info', 'Autologin start')
-    const selectors = {
-      email: 'input[name="email"]',
-      password: 'input[name="password"]',
-      loginButton: 'button[type="submit"]'
-    }
-    await this.waitForElementInWorker(selectors.email)
-    const isSuccess = await this.runInWorker('makeLoginReq', credentials)
-    return isSuccess
   }
 
   // ////////
@@ -216,18 +210,6 @@ class TemplateContentScript extends ContentScript {
   // ////////
 
   async checkAuthenticated() {
-    const loginField = document.querySelector('input[name="email"]')
-    const passwordField = document.querySelector('input[name="password"]')
-    if (loginField && passwordField) {
-      const userCredentials = await this.findAndSendCredentials.bind(this)(
-        loginField,
-        passwordField
-      )
-      this.log('debug', 'Sendin userCredentials to Pilot')
-      this.sendToPilot({
-        userCredentials
-      })
-    }
     if (
       (document.location.href.includes(`${HOMEPAGE_URL}`) &&
         document.querySelector('a[href="#"]')) ||
@@ -242,20 +224,12 @@ class TemplateContentScript extends ContentScript {
     return false
   }
 
-  async findAndSendCredentials(login, password) {
-    this.log('debug', 'findAndSendCredentials starts')
-    let userLogin = login.value
-    let userPassword = password.value
-    const userCredentials = {
-      login: userLogin,
-      password: userPassword,
-      preHashedPassword
-    }
-    return userCredentials
-  }
-
   checkAskForAppDownload() {
-    if (document.querySelector('a[href="#"]')) {
+    this.log('info', '📍️ checkAskForAppDownload starts')
+    const cantDownloadAppButton = document.querySelector(
+      'a[href="https://link.alan.com/app/dashboard"]'
+    )?.nextElementSibling
+    if (cantDownloadAppButton.textContent.includes('Je ne peux pas')) {
       return true
     } else {
       return false
@@ -270,16 +244,8 @@ class TemplateContentScript extends ContentScript {
     }
   }
 
-  ensureFrenchWebsiteVersion() {
-    const locationHref = document.location.href
-    if (locationHref !== 'https://alan.com/') {
-      return false
-    } else {
-      return true
-    }
-  }
-
   getUserMail() {
+    this.log('info', '📍️ getUserMail starts')
     const userInfosElements = document.querySelectorAll('.value-box-value')
     const userMail = userInfosElements[3].innerHTML
     if (userMail) {
@@ -288,7 +254,8 @@ class TemplateContentScript extends ContentScript {
     return 'UNKNOWN_ERROR'
   }
 
-  async getUserDatas() {
+  async getUserData() {
+    this.log('info', '📍️ getUserData starts')
     let token = await this.getCookieByDomainAndName(
       'https://api.alan.com',
       'token'
@@ -344,14 +311,16 @@ class TemplateContentScript extends ContentScript {
       jsonEvents,
       beneficiariesWithIds
     }
-    await Promise.all([
-      this.sendToPilot({ userDatas }),
-      this.sendToPilot({ userIdentity }),
-      this.sendToPilot({ token })
-    ])
+    const userInfos = {
+      userDatas,
+      userIdentity,
+      token
+    }
+    return userInfos
   }
 
   async getDocuments(userDatas, token) {
+    this.log('info', '📍️ getDocuments starts')
     let { bills, tpCardIdentifier } = await this.computeDocuments(
       userDatas.jsonDocuments,
       userDatas.jsonEvents
@@ -366,6 +335,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async computeDocuments(jsonDocuments, jsonEvents) {
+    this.log('info', '📍️ computeDocuments starts')
     let bills = []
     for (const beneficiary of jsonDocuments.beneficiaries) {
       const name = beneficiary.insurance_profile.user.normalized_full_name
@@ -424,6 +394,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   linkFiles(bills, beneficiariesWithIds, token) {
+    this.log('info', '📍️ linkFiles starts')
     let currentMonthIsReplaced = false
     let previousMonthIsReplaced = false
     return bills.map(bill => {
@@ -462,6 +433,7 @@ class TemplateContentScript extends ContentScript {
   }
 
   async getTpCard(tpCardIdentifier, token) {
+    this.log('info', '📍️ getTpCard starts')
     let tpCard = []
     tpCard.push({
       fileurl: `https://api.alan.com/api/users/${tpCardIdentifier}/tp-card?t=${Date.now()}`,
@@ -494,27 +466,51 @@ class TemplateContentScript extends ContentScript {
     return false
   }
 
-  async makeLoginReq(credentials) {
-    let cookies = document.cookie
-    const apiUrl = 'https://api.alan.com/auth/login'
-    const loginResponse = await window
-      .fetch(apiUrl, {
-        method: 'POST',
-        body: `{"refresh_token_type":"web","email":"${credentials.login}","prehashed_password":"${credentials.preHashedPassword}"}`,
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: cookies,
-          'X-APP-AUTH': 'cookie'
-        },
-        resolveWithFullResponse: true
-      })
-      .then(res => res.json())
-    if (!loginResponse.token_payload) {
-      return false
-    }
-    await this.sendToPilot({ loginResponse })
-    return true
-  }
+  // Same here, keeping this around for later investigation for autoLogin
+  // async makeLoginReq(credentials) {
+  //   this.log('info', '📍️ makeLoginReq starts')
+  //   let cookies = document.cookie
+  //   const tokenLoginUrl = 'https://api.alan.com/auth/login_idp'
+  //   const tokenUrl =
+  //     'https://idp.alan.com/realms/alan/protocol/openid-connect/token'
+  //   const loginResponse = await window
+  //     .fetch(tokenUrl, {
+  //       method: 'POST',
+  //       body: `client_id=fr-web-prod&grant_type=password&username=${credentials.login}&password=${credentials.preHashedPassword}`,
+  //       headers: {
+  //         'Content-Type': 'application/x-www-form-urlencoded',
+  //         Cookie: cookies
+  //       },
+  //       resolveWithFullResponse: true
+  //     })
+  //     .then(res => res.json())
+  //   // if (!loginResponse.token_payload) {
+  //   //   return false
+  //   // }
+  //   // await this.sendToPilot({ loginResponse })
+  //   // return true
+  //   if (!loginResponse.access_token) {
+  //     this.log('debug', 'Login response failed, check the code')
+  //     return false
+  //   }
+  //   cookies = document.cookie
+  //   const tokenResponse = await window
+  //     .fetch(tokenLoginUrl, {
+  //       method: 'POST',
+  //       body: `{"access_token":"${loginResponse.access_token}", "refresh_token_type":"web"}`,
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         Cookie: cookies
+  //       },
+  //       resolveWithFullResponse: true
+  //     })
+  //     .then(res => res.json())
+  //   if (!tokenResponse.token_payload) {
+  //     this.log('debug', 'Token response failed, check the code')
+  //     return false
+  //   }
+  //   return loginResponse
+  // }
 
   async fetchAlanApi(url, token) {
     this.log('info', 'fetchAlanApi starts')
@@ -544,11 +540,10 @@ connector
       'checkAskForAppDownload',
       'checkIfLogged',
       'getUserMail',
-      'getUserDatas',
+      'getUserData',
       'getDocuments',
-      'checkAskForLogin',
-      'makeLoginReq',
-      'ensureFrenchWebsiteVersion'
+      'checkAskForLogin'
+      // 'makeLoginReq'
     ]
   })
   .catch(err => {

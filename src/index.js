@@ -156,32 +156,39 @@ class TemplateContentScript extends ContentScript {
       this.store.userDatas,
       this.store.token
     )
+    // Classify bills by date
+    documents.bills.sort(function (a, b) {
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
     await this.saveFiles(documents.tpCard, {
       context,
       contentType: 'application/pdf',
       fileIdAttributes: ['filename'],
       qualificationLabel: 'health_insurance_card'
     })
-    // Classify bills by date
-    documents.bills.sort(function (a, b) {
-      return new Date(b.date).getTime() - new Date(a.date).getTime()
+
+    // first save files, then update existingFilesIndex
+    // to avoid multiple files downloads for the same file
+    const files = documents.bills.reduce((memo, bill) => {
+      if (!memo.find(f => f.filename === bill.filename)) {
+        memo.push(bill)
+      }
+      return memo
+    }, [])
+    await this.saveFiles(files, {
+      context,
+      fileIdAttributes: ['filename'],
+      contentType: 'application/pdf',
+      qualificationLabel: 'health_invoice'
     })
-    const numberOfBills = documents.bills.length
-    let savedBills = 0
-    this.log('debug', `Found ${numberOfBills} bills`)
-    // Saving bills by block of ten
-    while (documents.bills.length !== 0) {
-      const tenBlock = documents.bills.splice(0, 10)
-      savedBills = savedBills + tenBlock.length
-      await this.saveBills(tenBlock, {
-        context,
-        keys: ['vendorRef', 'beneficiary', 'date'],
-        fileIdAttributes: ['filename'],
-        contentType: 'application/pdf',
-        qualificationLabel: 'health_invoice'
-      })
-      this.log('debug', `bills saved : ${savedBills}/${numberOfBills}`)
-    }
+    await this.bridge.call('getExistingFilesIndex', true)
+    await this.saveBills(documents.bills, {
+      context,
+      keys: ['vendorRef', 'beneficiary', 'date'],
+      fileIdAttributes: ['filename'],
+      contentType: 'application/pdf',
+      qualificationLabel: 'health_invoice'
+    })
   }
 
   async userAuth() {

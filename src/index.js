@@ -151,27 +151,27 @@ class TemplateContentScript extends ContentScript {
     if (this.store.userCredentials) {
       await this.saveCredentials(this.store.userCredentials)
     }
-    await this.runInWorker(
+    let documents = await this.runInWorker(
       'getDocuments',
       this.store.userDatas,
       this.store.token
     )
-    await this.saveFiles(this.store.tpCard, {
+    await this.saveFiles(documents.tpCard, {
       context,
       contentType: 'application/pdf',
       fileIdAttributes: ['filename'],
       qualificationLabel: 'health_insurance_card'
     })
     // Classify bills by date
-    this.store.bills.sort(function (a, b) {
+    documents.bills.sort(function (a, b) {
       return new Date(b.date).getTime() - new Date(a.date).getTime()
     })
-    const numberOfBills = this.store.bills.length
+    const numberOfBills = documents.bills.length
     let savedBills = 0
     this.log('debug', `Found ${numberOfBills} bills`)
     // Saving bills by block of ten
-    while (this.store.bills.length !== 0) {
-      const tenBlock = this.store.bills.splice(0, 10)
+    while (documents.bills.length !== 0) {
+      const tenBlock = documents.bills.splice(0, 10)
       savedBills = savedBills + tenBlock.length
       await this.saveBills(tenBlock, {
         context,
@@ -328,10 +328,10 @@ class TemplateContentScript extends ContentScript {
     bills = this.computeGroupAmounts(bills)
     bills = this.linkFiles(bills, userDatas.beneficiariesWithIds, token.value)
     const tpCard = await this.getTpCard(tpCardIdentifier, token.value)
-    await Promise.all([
-      this.sendToPilot({ tpCard }),
-      this.sendToPilot({ bills })
-    ])
+    return {
+      tpCard,
+      bills
+    }
   }
 
   async computeDocuments(jsonDocuments, jsonEvents) {

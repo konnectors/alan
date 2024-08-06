@@ -181,7 +181,6 @@ class TemplateContentScript extends ContentScript {
       contentType: 'application/pdf',
       qualificationLabel: 'health_invoice'
     })
-    await this.bridge.call('getExistingFilesIndex', true)
     await this.saveBills(documents.bills, {
       context,
       keys: ['vendorRef', 'beneficiary', 'date'],

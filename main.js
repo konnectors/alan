@@ -12753,7 +12753,6 @@ class TemplateContentScript extends cozy_clisk_dist_contentscript__WEBPACK_IMPOR
       contentType: 'application/pdf',
       qualificationLabel: 'health_invoice'
     })
-    await this.bridge.call('getExistingFilesIndex', true)
     await this.saveBills(documents.bills, {
       context,
       keys: ['vendorRef', 'beneficiary', 'date'],

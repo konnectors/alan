@@ -267,7 +267,7 @@ class TemplateContentScript extends ContentScript {
       'token'
     )
     const documentsUrl =
-      'https://api.alan.com/api/users/${beneficiaryId}?expand=visible_insurance_documents,address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'
+      'https://api.alan.com/api/users/${beneficiaryId}?expand=address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'
     const jsonDocuments = await this.fetchAlanApi(documentsUrl, token.value)
     const beneficiaries = jsonDocuments.beneficiaries
     let beneficiariesWithIds = []

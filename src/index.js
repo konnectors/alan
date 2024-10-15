@@ -37,7 +37,7 @@ const LOGIN_URL = 'https://alan.com/login'
 const HOMEPAGE_URL = 'https://alan.com/app/dashboard'
 const LOGOUT_URL = `${BASE_URL}/logout`
 
-class TemplateContentScript extends ContentScript {
+class AlanContentScript extends ContentScript {
   // ////////
   // PILOT //
   // ////////
@@ -267,7 +267,7 @@ class TemplateContentScript extends ContentScript {
       'token'
     )
     const documentsUrl =
-      'https://api.alan.com/api/users/${beneficiaryId}?expand=visible_insurance_documents,address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'
+      'https://api.alan.com/api/users/${beneficiaryId}?expand=address,beneficiaries,beneficiaries.insurance_profile.user,beneficiaries.insurance_profile.latest_tp_card'
     const jsonDocuments = await this.fetchAlanApi(documentsUrl, token.value)
     const beneficiaries = jsonDocuments.beneficiaries
     let beneficiariesWithIds = []
@@ -472,52 +472,6 @@ class TemplateContentScript extends ContentScript {
     return false
   }
 
-  // Same here, keeping this around for later investigation for autoLogin
-  // async makeLoginReq(credentials) {
-  //   this.log('info', '📍️ makeLoginReq starts')
-  //   let cookies = document.cookie
-  //   const tokenLoginUrl = 'https://api.alan.com/auth/login_idp'
-  //   const tokenUrl =
-  //     'https://idp.alan.com/realms/alan/protocol/openid-connect/token'
-  //   const loginResponse = await window
-  //     .fetch(tokenUrl, {
-  //       method: 'POST',
-  //       body: `client_id=fr-web-prod&grant_type=password&username=${credentials.login}&password=${credentials.preHashedPassword}`,
-  //       headers: {
-  //         'Content-Type': 'application/x-www-form-urlencoded',
-  //         Cookie: cookies
-  //       },
-  //       resolveWithFullResponse: true
-  //     })
-  //     .then(res => res.json())
-  //   // if (!loginResponse.token_payload) {
-  //   //   return false
-  //   // }
-  //   // await this.sendToPilot({ loginResponse })
-  //   // return true
-  //   if (!loginResponse.access_token) {
-  //     this.log('debug', 'Login response failed, check the code')
-  //     return false
-  //   }
-  //   cookies = document.cookie
-  //   const tokenResponse = await window
-  //     .fetch(tokenLoginUrl, {
-  //       method: 'POST',
-  //       body: `{"access_token":"${loginResponse.access_token}", "refresh_token_type":"web"}`,
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         Cookie: cookies
-  //       },
-  //       resolveWithFullResponse: true
-  //     })
-  //     .then(res => res.json())
-  //   if (!tokenResponse.token_payload) {
-  //     this.log('debug', 'Token response failed, check the code')
-  //     return false
-  //   }
-  //   return loginResponse
-  // }
-
   async fetchAlanApi(url, token) {
     this.log('info', 'fetchAlanApi starts')
     let urlToCheck = url
@@ -539,7 +493,7 @@ class TemplateContentScript extends ContentScript {
   }
 }
 
-const connector = new TemplateContentScript()
+const connector = new AlanContentScript()
 connector
   .init({
     additionalExposedMethodsNames: [
@@ -549,7 +503,6 @@ connector
       'getUserData',
       'getDocuments',
       'checkAskForLogin'
-      // 'makeLoginReq'
     ]
   })
   .catch(err => {

@@ -475,10 +475,11 @@ class AlanContentScript extends ContentScript {
   async fetchAlanApi(url, token) {
     this.log('info', 'fetchAlanApi starts')
     let urlToCheck = url
-    let tokenPayload = window.localStorage.tokenPayload
+    let tokenPayload = window.localStorage['@auth:tokenPayload']
     let beneficiaryId = tokenPayload
       .split(',')[1]
       .replace(/"/g, '')
+      .replace(/\\/g, '')
       .split(':')[1]
     if (urlToCheck.includes('${beneficiaryId}')) {
       urlToCheck = urlToCheck.replace('${beneficiaryId}', beneficiaryId)

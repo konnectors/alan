@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@cozy/minilog": "1.0.0",
-    "cozy-clisk": "^0.38.2",
+    "cozy-clisk": "^0.42.0",
     "date-fns": "2.30.0"
   },
   "eslintConfig": {
@@ -29,6 +29,6 @@
     "watchDeploy": "UPDATE_ON_LOCAL_COZY_STACK=true yarn watch"
   },
   "devDependencies": {
-    "cozy-konnector-build": "^1.7.0"
+    "cozy-konnector-build": "^1.8.0"
   }
 }
